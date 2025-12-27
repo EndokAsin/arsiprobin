@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsip Pak Dhe Robin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Library untuk kompresi gambar otomatis -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="glass sticky top-0 z-50 border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-600 p-2 rounded-lg text-white">
+                        <i class="fas fa-archive text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-800 tracking-tight">Arsip Pak Dhe Robin</span>
+                </div>
+                <button onclick="openUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95">
+                    <i class="fas fa-plus"></i>
+                    <span class="hidden sm:inline">Tambah Dokumen</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Statistik -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penelitian</p>
+                <h3 id="count-penelitian" class="text-2xl font-bold text-blue-600">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengajaran</p>
+                <h3 id="count-pengajaran" class="text-2xl font-bold text-green-600">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengabdian</p>
+                <h3 id="count-pengabdian" class="text-2xl font-bold text-orange-600">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penunjang</p>
+                <h3 id="count-penunjang" class="text-2xl font-bold text-purple-600">0</h3>
+            </div>
+        </div>
+
+        <!-- Tabs Filter -->
+        <div class="flex overflow-x-auto gap-6 mb-6 border-b border-gray-200">
+            <button onclick="filterKategori('Semua')" id="tab-Semua" class="tab-btn pb-3 px-2 tab-active whitespace-nowrap">Semua</button>
+            <button onclick="filterKategori('Penelitian')" id="tab-Penelitian" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penelitian</button>
+            <button onclick="filterKategori('Pengajaran')" id="tab-Pengajaran" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengajaran</button>
+            <button onclick="filterKategori('Pengabdian')" id="tab-Pengabdian" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengabdian</button>
+            <button onclick="filterKategori('Penunjang')" id="tab-Penunjang" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penunjang</button>
+        </div>
+
+        <!-- List Dokumen -->
+        <div id="list-dokumen" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full py-20 text-center text-gray-400">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                Memuat data arsip...
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Upload/Edit -->
+    <div id="modal-upload" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-title" class="text-xl font-bold text-gray-800">Upload Dokumen</h2>
+                <button onclick="toggleModal('modal-upload')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="form-upload" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="old-url">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Judul Dokumen</label>
+                    <input type="text" id="judul" required placeholder="SK/Sertifikat/Laporan..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                    <select id="kategori" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Penelitian">Penelitian</option>
+                        <option value="Pengajaran">Pengajaran</option>
+                        <option value="Pengabdian">Pengabdian</option>
+                        <option value="Penunjang">Penunjang</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="label-file">Pilih File Baru</label>
+                    <input type="file" id="fileInput" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
+                    <p id="compress-info" class="text-[10px] text-blue-500 mt-1 hidden font-medium">✨ Gambar akan dikompresi otomatis</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+                    <textarea id="deskripsi" rows="3" placeholder="Catatan tambahan..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition-all">
+                    <span id="btn-text">Simpan ke Arsip</span>
+                    <div id="btn-loader" class="hidden loading-spinner !border-t-white"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifikasi -->
+    <div id="notification" class="fixed bottom-4 right-4 z-[100] transform translate-y-20 transition-all duration-300 pointer-events-none">
+        <div id="notif-box" class="bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3">
+            <i id="notif-icon" class="fas fa-check-circle"></i>
+            <span id="notif-msg"></span>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://zvtjltvrluczqpdzclag.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_Tufkqe0yy4biPypEvXK2KA_It4Yvwr5";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allDocuments = [];
+        let currentKategori = 'Semua';
+
+        window.onload = fetchDocuments;
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const info = document.getElementById('compress-info');
+            if (file && file.type.startsWith('image/')) {
+                info.classList.remove('hidden');
+            } else {
+                info.classList.add('hidden');
+            }
+        });
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        function openUploadModal() {
+            document.getElementById('form-upload').reset();
+            document.getElementById('edit-id').value = "";
+            document.getElementById('modal-title').innerText = "Upload Dokumen Baru";
+            document.getElementById('btn-text').innerText = "Simpan ke Arsip";
+            document.getElementById('fileInput').required = true;
+            document.getElementById('label-file').innerText = "Pilih File";
+            toggleModal('modal-upload');
+        }
+
+        function showNotification(msg, type = 'success') {
+            const notif = document.getElementById('notification');
+            const notifMsg = document.getElementById('notif-msg');
+            const notifIcon = document.getElementById('notif-icon');
+            const notifBox = document.getElementById('notif-box');
+            notifMsg.innerText = msg;
+            notifBox.className = type === 'success' ? 'bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3' : 'bg-red-600 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3';
+            notifIcon.className = type === 'success' ? 'fas fa-check-circle text-green-400' : 'fas fa-exclamation-triangle text-white';
+            notif.classList.remove('translate-y-20');
+            setTimeout(() => notif.classList.add('translate-y-20'), 4000);
+        }
+
+        async function fetchDocuments() {
+            try {
+                const { data, error } = await supabaseClient.from('arsip_dokumen').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                allDocuments = data;
+                renderDocuments();
+                updateStats();
+            } catch (err) {
+                showNotification("Gagal memuat: " + err.message, 'error');
+            }
+        }
+
+        function updateStats() {
+            const counts = { 'Penelitian': 0, 'Pengajaran': 0, 'Pengabdian': 0, 'Penunjang': 0 };
+            allDocuments.forEach(doc => counts[doc.kategori]++);
+            for (let kat in counts) {
+                const el = document.getElementById(`count-${kat.toLowerCase()}`);
+                if(el) el.innerText = counts[kat];
+            }
+        }
+
+        function filterKategori(kat) {
+            currentKategori = kat;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('tab-active', btn.id === `tab-${kat}`);
+                if(btn.id !== `tab-${kat}`) btn.classList.add('text-gray-500');
+            });
+            renderDocuments();
+        }
+
+        function getFileIcon(filename) {
+            const ext = filename?.split('.').pop().toLowerCase() || '';
+            if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'fa-file-image text-pink-500';
+            if (ext === 'pdf') return 'fa-file-pdf text-red-500';
+            if (['doc', 'docx'].includes(ext)) return 'fa-file-word text-blue-500';
+            return 'fa-file-alt text-gray-500';
+        }
+
+        function renderDocuments() {
+            const container = document.getElementById('list-dokumen');
+            const filtered = currentKategori === 'Semua' ? allDocuments : allDocuments.filter(d => d.kategori === currentKategori);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400"><i class="fas fa-folder-open text-5xl mb-4 opacity-20"></i><p>Tidak ada dokumen ditemukan.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(doc => `
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all card-hover flex flex-col overflow-hidden">
+                    <div class="p-5 flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-gray-50 p-3 rounded-xl"><i class="fas ${getFileIcon(doc.nama_file)} text-xl"></i></div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-gray-100 text-gray-500">${doc.kategori}</span>
+                        </div>
+                        <h4 class="font-bold text-gray-800 mb-1 line-clamp-2">${doc.judul || doc.nama_file}</h4>
+                        <p class="text-[10px] text-gray-400 mb-3 truncate">File: ${doc.nama_file}</p>
+                        <p class="text-sm text-gray-500 italic line-clamp-3">${doc.deskripsi || '-'}</p>
+                    </div>
+                    <div class="p-5 pt-0 mt-auto">
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+                            <span class="text-[10px] text-gray-400">${new Date(doc.created_at).toLocaleDateString('id-ID')}</span>
+                            <div class="flex gap-1">
+                                <button onclick="editDoc('${doc.id}')" title="Edit" class="p-2 text-gray-300 hover:text-blue-600 transition-colors"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteDoc('${doc.id}')" title="Hapus" class="p-2 text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                                <button onclick="downloadFile('${doc.file_url}', '${doc.nama_file}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <i class="fas fa-download"></i> Unduh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function downloadFile(url, name) {
+            try {
+                showNotification("Mendownload...");
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = name;
+                link.click();
+            } catch (e) { window.open(url, '_blank'); }
+        }
+
+        async function editDoc(id) {
+            const doc = allDocuments.find(d => d.id === id);
+            if (!doc) return;
+
+            document.getElementById('edit-id').value = doc.id;
+            document.getElementById('judul').value = doc.judul || "";
+            document.getElementById('kategori').value = doc.kategori;
+            document.getElementById('deskripsi').value = doc.deskripsi || "";
+            document.getElementById('old-url').value = doc.file_url;
+            
+            document.getElementById('modal-title').innerText = "Edit Dokumen";
+            document.getElementById('btn-text').innerText = "Simpan Perubahan";
+            document.getElementById('fileInput').required = false;
+            document.getElementById('label-file').innerText = "Ganti File (Kosongkan jika tidak diubah)";
+            
+            toggleModal('modal-upload');
+        }
+
+        document.getElementById('form-upload').onsubmit = async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            let file = document.getElementById('fileInput').files[0];
+            const judul = document.getElementById('judul').value;
+            const kategori = document.getElementById('kategori').value;
+            const deskripsi = document.getElementById('deskripsi').value;
+            
+            const btn = document.getElementById('btn-submit');
+            const btnLoader = document.getElementById('btn-loader');
+            const btnText = document.getElementById('btn-text');
+            
+            btn.disabled = true;
+            btnLoader.classList.remove('hidden');
+
+            try {
+                let finalUrl = document.getElementById('old-url').value;
+                let finalFileName = allDocuments.find(d => d.id === editId)?.nama_file || "";
+
+                if (file) {
+                    if (file.type.startsWith('image/')) {
+                        btnText.innerText = "Mengompres...";
+                        const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true };
+                        try { file = await imageCompression(file, options); } catch (e) {}
+                    }
+
+                    btnText.innerText = "Mengupload...";
+                    const path = `${kategori}/${Date.now()}_${file.name}`;
+                    const { error: storageErr } = await supabaseClient.storage.from('dokumen-arsip').upload(path, file);
+                    if (storageErr) throw storageErr;
+
+                    const { data: { publicUrl } } = supabaseClient.storage.from('dokumen-arsip').getPublicUrl(path);
+                    finalUrl = publicUrl;
+                    finalFileName = file.name;
+                }
+
+                btnText.innerText = "Menyimpan...";
+                if (editId) {
+                    const { error } = await supabaseClient.from('arsip_dokumen').update({ judul, nama_file: finalFileName, kategori, deskripsi, file_url: finalUrl }).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('arsip_dokumen').insert([{ judul, nama_file: finalFileName, kategori, deskripsi, file_url: finalUrl }]);
+                    if (error) throw error;
+                }
+
+                showNotification(editId ? "Berhasil diperbarui!" : "Berhasil disimpan!");
+                toggleModal('modal-upload');
+                fetchDocuments();
+            } catch (err) {
+                showNotification(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btnLoader.classList.add('hidden');
+                btnText.innerText = editId ? "Simpan Perubahan" : "Simpan ke Arsip";
+            }
+        };
+
+        // FUNGSI HAPUS YANG DIPERBAIKI
+        async function deleteDoc(id) {
+            const doc = allDocuments.find(d => d.id === id);
+            if (!doc) return;
+
+            if (!confirm(`Hapus arsip "${doc.judul || doc.nama_file}"?`)) return;
+
+            try {
+                showNotification("Menghapus arsip...");
+
+                // 1. Ambil path file dari URL untuk menghapus di storage
+                // URL Supabase biasanya: .../storage/v1/object/public/dokumen-arsip/Penelitian/file.pdf
+                const urlParts = doc.file_url.split('/dokumen-arsip/');
+                if (urlParts.length > 1) {
+                    const filePath = decodeURIComponent(urlParts[1]);
+                    // Hapus file di Storage terlebih dahulu
+                    const { error: storageError } = await supabaseClient.storage
+                        .from('dokumen-arsip')
+                        .remove([filePath]);
+                    
+                    if (storageError) console.warn("Gagal hapus file fisik, lanjut hapus data tabel:", storageError.message);
+                }
+
+                // 2. Hapus baris data di Tabel
+                const { error: dbError } = await supabaseClient
+                    .from('arsip_dokumen')
+                    .delete()
+                    .eq('id', id);
+
+                if (dbError) throw dbError;
+
+                showNotification("Arsip berhasil dihapus.");
+                fetchDocuments(); // Refresh tampilan
+            } catch (err) {
+                console.error("Error Delete:", err);
+                showNotification("Gagal menghapus: " + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
