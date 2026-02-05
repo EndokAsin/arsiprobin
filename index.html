@@ -566,7 +566,8 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dGpsdHZybHVjenFwZHpjbGFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxODQwNzksImV4cCI6MjA1Mjc2MDA3OX0.G1LwzuHhJcGozggwQnlzXwFHKZRKaZqCpb9xS5qwUfE";
         
         // Inisialisasi Supabase client - HANYA SEKALI
-        const supabaseClient = window.supabase ? window.supabase : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+       const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY););
 
         // =============== STATE APLIKASI ===============
         let currentView = 'arsip';
