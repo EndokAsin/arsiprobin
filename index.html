@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Arsip & Tugas Dosen - Pak Dhe Robin</title>
+    <title>Sistem Manajemen Dosen - Universitas Teknologi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
@@ -30,6 +30,16 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
+        /* Line clamp */
+        .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+        .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        /* Table styling */
+        .table-container { overflow-x: auto; border-radius: 0.5rem; }
+        .table-container table { min-width: 100%; }
+        .table-container th { padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; background-color: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+        .table-container td { padding: 1rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+        .table-container tr:hover { background-color: #f9fafb; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -43,17 +53,20 @@
                         <i class="fas fa-university text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-800 tracking-tight">Sistem Akademik Dosen</h1>
-                        <p class="text-xs text-gray-500">Pak Dhe Robin - Universitas Teknologi</p>
+                        <h1 class="text-xl font-bold text-gray-800 tracking-tight">Sistem Manajemen Dosen</h1>
+                        <p class="text-xs text-gray-500">Universitas Teknologi</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="hidden md:flex items-center gap-2">
                         <button onclick="toggleView('arsip')" id="btn-view-arsip" class="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 font-medium transition-all">
-                            <i class="fas fa-archive mr-2"></i>Arsip Dokumen
+                            <i class="fas fa-archive mr-2"></i>Arsip
                         </button>
                         <button onclick="toggleView('tugas')" id="btn-view-tugas" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all">
-                            <i class="fas fa-tasks mr-2"></i>Manajemen Tugas
+                            <i class="fas fa-tasks mr-2"></i>Tugas
+                        </button>
+                        <button onclick="toggleView('users')" id="btn-view-users" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all">
+                            <i class="fas fa-users mr-2"></i>Users
                         </button>
                         <button onclick="toggleView('kalender')" id="btn-view-kalender" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all">
                             <i class="fas fa-calendar-alt mr-2"></i>Kalender
@@ -67,8 +80,8 @@
                             <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                         </div>
                         <div class="hidden sm:block">
-                            <p class="text-sm font-medium text-gray-700">Pak Dhe Robin</p>
-                            <p class="text-xs text-gray-500">Dosen Pengampu</p>
+                            <p class="text-sm font-medium text-gray-700" id="current-user-name">Pak Dhe Robin</p>
+                            <p class="text-xs text-gray-500" id="current-user-role">Dosen Pengampu</p>
                         </div>
                     </div>
                 </div>
@@ -141,11 +154,11 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-800">Manajemen Tugas Perkuliahan</h2>
-                    <p class="text-gray-600">Kelola tugas, deadline, dan submission mahasiswa</p>
+                    <p class="text-gray-600">Rekap dan monitoring tugas yang diberikan</p>
                 </div>
                 <button onclick="openTugasModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all active:scale-95">
                     <i class="fas fa-plus"></i>
-                    <span>Tugas Baru</span>
+                    <span>Catat Tugas</span>
                 </button>
             </div>
 
@@ -169,16 +182,16 @@
                     <h3 id="count-tugas-total" class="text-2xl font-bold text-gray-800">0</h3>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Belum Dinilai</p>
+                    <h3 id="count-belum-dinilai" class="text-2xl font-bold text-yellow-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Sudah Dinilai</p>
+                    <h3 id="count-sudah-dinilai" class="text-2xl font-bold text-green-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                     <p class="text-sm text-gray-500 mb-1">Deadline Minggu Ini</p>
                     <h3 id="count-deadline" class="text-2xl font-bold text-orange-600">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <p class="text-sm text-gray-500 mb-1">Tugas Dikumpulkan</p>
-                    <h3 id="count-dikumpulkan" class="text-2xl font-bold text-green-600">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <p class="text-sm text-gray-500 mb-1">Belum Dinilai</p>
-                    <h3 id="count-belum-dinilai" class="text-2xl font-bold text-red-600">0</h3>
                 </div>
             </div>
 
@@ -187,6 +200,67 @@
                 <div class="text-center py-12 text-gray-400">
                     <i class="fas fa-tasks text-4xl mb-4 opacity-20"></i>
                     <p>Memuat data tugas...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: USER MANAGEMENT -->
+        <div id="view-users" class="space-y-8 hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Manajemen Pengguna</h2>
+                    <p class="text-gray-600">Kelola dosen dan asisten pengajar</p>
+                </div>
+                <button onclick="openUserModal()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all active:scale-95">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Tambah User</span>
+                </button>
+            </div>
+
+            <!-- Statistik Users -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-xl text-white shadow-lg">
+                    <p class="text-xs uppercase font-bold mb-1 opacity-90">Total Users</p>
+                    <h3 id="count-users-total" class="text-2xl font-bold">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Dosen</p>
+                    <h3 id="count-dosen" class="text-2xl font-bold text-blue-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Asisten</p>
+                    <h3 id="count-asisten" class="text-2xl font-bold text-green-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Admin</p>
+                    <h3 id="count-admin" class="text-2xl font-bold text-red-600">0</h3>
+                </div>
+            </div>
+
+            <!-- Tabel Users -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Email</th>
+                                <th>NIP/NIM</th>
+                                <th>Mata Kuliah</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr>
+                                <td colspan="7" class="text-center py-12 text-gray-400">
+                                    <div class="loading-spinner mx-auto mb-4"></div>
+                                    <p class="animate-pulse">Memuat data pengguna...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -343,7 +417,7 @@
     <div id="modal-tugas" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h2 id="modal-tugas-title" class="text-xl font-bold text-gray-800">Tugas Perkuliahan Baru</h2>
+                <h2 id="modal-tugas-title" class="text-xl font-bold text-gray-800">Catat Tugas Perkuliahan</h2>
                 <button onclick="toggleModal('modal-tugas')" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <i class="fas fa-times text-xl"></i>
                 </button>
@@ -354,7 +428,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Mata Kuliah *</label>
-                        <input type="text" id="matakuliah" required placeholder="Algoritma dan Struktur Data" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="matakuliah" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Mata Kuliah</option>
+                            <option value="Algoritma dan Struktur Data">Algoritma dan Struktur Data</option>
+                            <option value="Basis Data">Basis Data</option>
+                            <option value="Pemrograman Web">Pemrograman Web</option>
+                            <option value="Kecerdasan Buatan">Kecerdasan Buatan</option>
+                            <option value="Jaringan Komputer">Jaringan Komputer</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
@@ -369,12 +450,12 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai *</label>
-                        <input type="date" id="tanggal-mulai" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Diberikan *</label>
+                        <input type="date" id="tanggal-diberikan" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline *</label>
-                        <input type="datetime-local" id="deadline" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline Pengumpulan *</label>
+                        <input type="date" id="deadline" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
 
@@ -391,6 +472,23 @@
                             <option value="Presentasi">Presentasi</option>
                             <option value="Laporan">Laporan</option>
                             <option value="Koding">Koding</option>
+                            <option value="Kuis">Kuis</option>
+                            <option value="Ujian">Ujian</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Mahasiswa</label>
+                        <input type="number" id="jumlah-mahasiswa" min="1" value="30" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status Penilaian</label>
+                        <select id="status-penilaian" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Belum Dinilai">Belum Dinilai</option>
+                            <option value="Sedang Dinilai">Sedang Dinilai</option>
+                            <option value="Selesai Dinilai">Selesai Dinilai</option>
                         </select>
                     </div>
                 </div>
@@ -398,6 +496,11 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Tugas *</label>
                     <textarea id="deskripsi-tugas" rows="4" required placeholder="Detail tugas, ketentuan, dan instruksi..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Penting</label>
+                    <textarea id="catatan" rows="2" placeholder="Catatan khusus untuk tugas ini..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
 
                 <div>
@@ -415,6 +518,90 @@
                     <button type="submit" id="btn-submit-tugas" class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition-all active:scale-95">
                         <span id="btn-tugas-text">Simpan Tugas</span>
                         <div id="btn-tugas-loader" class="hidden loading-spinner !border-t-white"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Tambah/Edit User -->
+    <div id="modal-user" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-user-title" class="text-xl font-bold text-gray-800">Tambah Pengguna Baru</h2>
+                <button onclick="toggleModal('modal-user')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="form-user" class="space-y-4">
+                <input type="hidden" id="user-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap *</label>
+                        <input type="text" id="user-nama" required placeholder="Dr. John Doe, M.Kom" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                        <select id="user-role" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Dosen">Dosen</option>
+                            <option value="Asisten">Asisten Dosen</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input type="email" id="user-email" required placeholder="user@university.ac.id" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NIP/NIM *</label>
+                        <input type="text" id="user-nip" required placeholder="198304152006041001" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                        <input type="password" id="user-password" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Minimal 6 karakter</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password *</label>
+                        <input type="password" id="user-confirm-password" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mata Kuliah yang Diampu</label>
+                    <textarea id="user-matakuliah" rows="2" placeholder="Algoritma dan Struktur Data, Basis Data, ..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Pisahkan dengan koma</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+                        <input type="tel" id="user-telepon" placeholder="081234567890" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="user-status" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Nonaktif">Nonaktif</option>
+                            <option value="Cuti">Cuti</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="toggleModal('modal-user')" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-submit-user" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition-all active:scale-95">
+                        <span id="btn-user-text">Simpan User</span>
+                        <div id="btn-user-loader" class="hidden loading-spinner !border-t-white"></div>
                     </button>
                 </div>
             </form>
@@ -439,13 +626,13 @@
                 <div class="md:col-span-2 space-y-4">
                     <div class="bg-gray-50 rounded-xl p-4">
                         <h3 class="font-bold text-gray-700 mb-2">Deskripsi Tugas</h3>
-                        <p id="detail-deskripsi" class="text-gray-600"></p>
+                        <p id="detail-deskripsi" class="text-gray-600 whitespace-pre-line"></p>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-white border border-gray-200 rounded-xl p-4">
-                            <p class="text-sm text-gray-500">Tanggal Mulai</p>
-                            <p id="detail-mulai" class="font-semibold text-gray-800"></p>
+                            <p class="text-sm text-gray-500">Tanggal Diberikan</p>
+                            <p id="detail-diberikan" class="font-semibold text-gray-800"></p>
                         </div>
                         <div class="bg-white border border-gray-200 rounded-xl p-4">
                             <p class="text-sm text-gray-500">Deadline</p>
@@ -460,44 +647,73 @@
                             <p id="detail-bobot" class="font-semibold text-gray-800"></p>
                         </div>
                     </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <h3 class="font-bold text-gray-700 mb-2">Catatan</h3>
+                        <p id="detail-catatan" class="text-gray-600"></p>
+                    </div>
                 </div>
                 
-                <!-- Statistik Submission -->
+                <!-- Statistik -->
                 <div class="space-y-4">
                     <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-                        <p class="text-sm opacity-90">Total Mahasiswa</p>
+                        <p class="text-sm opacity-90">Jumlah Mahasiswa</p>
                         <h3 id="detail-total-mhs" class="text-2xl font-bold">0</h3>
                     </div>
                     <div class="bg-white border border-gray-200 rounded-xl p-4">
-                        <p class="text-sm text-gray-500">Telah Mengumpulkan</p>
+                        <p class="text-sm text-gray-500">Status Penilaian</p>
+                        <h3 id="detail-status-nilai" class="text-2xl font-bold text-orange-600">Belum Dinilai</h3>
+                        <div class="mt-2">
+                            <select id="update-status-nilai" onchange="updateStatusNilai()" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Belum Dinilai">Belum Dinilai</option>
+                                <option value="Sedang Dinilai">Sedang Dinilai</option>
+                                <option value="Selesai Dinilai">Selesai Dinilai</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <p class="text-sm text-gray-500">Telah Dinilai</p>
                         <div class="flex items-center justify-between mt-2">
-                            <h3 id="detail-dikumpulkan" class="text-2xl font-bold text-green-600">0</h3>
+                            <h3 id="detail-dinilai" class="text-2xl font-bold text-green-600">0</h3>
                             <span id="detail-persentase" class="text-sm text-gray-500">0%</span>
                         </div>
                         <div class="progress-bar bg-gray-200 mt-2">
                             <div id="detail-progress" class="progress-fill bg-green-500" style="width: 0%"></div>
                         </div>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-xl p-4">
-                        <p class="text-sm text-gray-500">Status Penilaian</p>
-                        <h3 id="detail-status-nilai" class="text-2xl font-bold text-orange-600">Belum Dinilai</h3>
-                    </div>
                 </div>
             </div>
             
-            <!-- Daftar Submission -->
+            <!-- Daftar Nilai -->
             <div class="mt-8">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-gray-700">Daftar Pengumpulan</h3>
-                    <button onclick="addSubmission()" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-plus mr-1"></i>Tambah Submission
+                    <h3 class="font-bold text-gray-700">Daftar Nilai Mahasiswa</h3>
+                    <button onclick="exportNilaiExcel()" class="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-file-excel mr-1"></i>Export Excel
                     </button>
                 </div>
-                <div id="list-submission" class="space-y-2">
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-inbox text-3xl mb-3 opacity-20"></i>
-                        <p>Belum ada pengumpulan</p>
-                    </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>NIM</th>
+                                <th>Nama Mahasiswa</th>
+                                <th>Nilai</th>
+                                <th>Status</th>
+                                <th>Tanggal Dinilai</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-nilai">
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-inbox text-2xl mb-3 opacity-20"></i>
+                                    <p>Belum ada data nilai</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
@@ -505,8 +721,8 @@
                 <button onclick="editTugasDetail()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <i class="fas fa-edit mr-2"></i>Edit Tugas
                 </button>
-                <button onclick="downloadAllSubmissions()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    <i class="fas fa-download mr-2"></i>Download Semua
+                <button onclick="exportRekapTugas()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-file-pdf mr-2"></i>Export PDF
                 </button>
                 <button onclick="deleteTugasDetail()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                     <i class="fas fa-trash mr-2"></i>Hapus Tugas
@@ -515,34 +731,41 @@
         </div>
     </div>
 
-    <!-- MODAL: Tambah Submission -->
-    <div id="modal-submission" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+    <!-- MODAL: Input Nilai -->
+    <div id="modal-nilai" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">Tambah Submission</h2>
-                <button onclick="toggleModal('modal-submission')" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-xl font-bold text-gray-800">Input Nilai Mahasiswa</h2>
+                <button onclick="toggleModal('modal-nilai')" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <form id="form-submission" class="space-y-4">
+            <form id="form-nilai" class="space-y-4">
+                <input type="hidden" id="nilai-id">
+                <input type="hidden" id="nilai-tugas-id">
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">NIM Mahasiswa</label>
-                    <input type="text" id="submission-nim" required class="w-full border border-gray-300 rounded-lg p-2">
+                    <input type="text" id="nilai-nim" required class="w-full border border-gray-300 rounded-lg p-2">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Mahasiswa</label>
-                    <input type="text" id="submission-nama" required class="w-full border border-gray-300 rounded-lg p-2">
+                    <input type="text" id="nilai-nama" required class="w-full border border-gray-300 rounded-lg p-2">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">File Tugas</label>
-                    <input type="file" id="submission-file" required class="w-full border border-gray-300 rounded-lg p-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nilai (0-100)</label>
+                    <input type="number" id="nilai" min="0" max="100" required class="w-full border border-gray-300 rounded-lg p-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Komentar</label>
+                    <textarea id="nilai-komentar" rows="2" class="w-full border border-gray-300 rounded-lg p-2"></textarea>
                 </div>
                 <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="toggleModal('modal-submission')" class="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg">
+                    <button type="button" onclick="toggleModal('modal-nilai')" class="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg">
                         Batal
                     </button>
                     <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg">
-                        Simpan
+                        Simpan Nilai
                     </button>
                 </div>
             </form>
@@ -563,18 +786,19 @@
     <script>
         // =============== KONFIGURASI SUPABASE ===============
         const SUPABASE_URL = "https://zvtjltvrluczqpdzclag.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_Tufkqe0yy4biPypEvXK2KA_It4Yvwr5";
+        const SUPABASE_ANON_KEY = "sb_publishable_Tufkqe0yy4biPypEvXK2KA_It4Yvwr5";
 
-        // Inisialisasi Supabase client - HANYA SEKALI
-       const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Inisialisasi Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // =============== STATE APLIKASI ===============
         let currentView = 'arsip';
         let currentKategori = 'Semua';
         let allDocuments = [];
         let allTugas = [];
-        let allMataKuliah = [];
+        let allUsers = [];
+        let allNilai = [];
         let currentMonth = new Date();
         let currentUser = {
             id: '1',
@@ -596,12 +820,17 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 // Load semua data paralel
                 await Promise.all([
                     fetchDocuments(),
-                    fetchTugas()
+                    fetchTugas(),
+                    fetchUsers()
                 ]);
                 
                 generateCalendar();
                 setTodayEvents();
                 setupEventListeners();
+                
+                // Update UI dengan user yang login
+                document.getElementById('current-user-name').textContent = currentUser.name;
+                document.getElementById('current-user-role').textContent = currentUser.role;
                 
                 showNotification("Aplikasi siap digunakan!", "success");
             } catch (error) {
@@ -611,7 +840,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
         function setupEventListeners() {
-            // Search functionality
+            // Search functionality untuk arsip
             const searchInput = document.getElementById('search-arsip');
             if (searchInput) {
                 searchInput.addEventListener('input', debounce(function(e) {
@@ -668,19 +897,19 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             // Set tanggal default untuk form tugas
             const now = new Date();
-            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
             
-            const tanggalMulai = document.getElementById('tanggal-mulai');
+            const tanggalDiberikan = document.getElementById('tanggal-diberikan');
             const deadline = document.getElementById('deadline');
             
-            if (tanggalMulai) {
-                tanggalMulai.value = formatDateForInput(now);
-                tanggalMulai.min = formatDateForInput(now);
+            if (tanggalDiberikan) {
+                tanggalDiberikan.value = formatDateForInput(now);
+                tanggalDiberikan.min = formatDateForInput(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
+                tanggalDiberikan.max = formatDateForInput(now);
             }
             
             if (deadline) {
-                deadline.value = formatDateTimeForInput(tomorrow);
-                deadline.min = formatDateTimeForInput(now);
+                deadline.value = formatDateForInput(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+                deadline.min = formatDateForInput(now);
             }
         }
 
@@ -689,7 +918,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             currentView = view;
             
             // Hide all views
-            ['arsip', 'tugas', 'kalender'].forEach(v => {
+            ['arsip', 'tugas', 'users', 'kalender'].forEach(v => {
                 const element = document.getElementById(`view-${v}`);
                 if (element) element.classList.add('hidden');
                 
@@ -714,9 +943,274 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             // Refresh data if needed
             if (view === 'tugas') {
                 fetchTugas();
+            } else if (view === 'users') {
+                fetchUsers();
             } else if (view === 'kalender') {
                 generateCalendar();
             }
+        }
+
+        // =============== USER MANAGEMENT ===============
+        async function fetchUsers() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .order('role', { ascending: true });
+                
+                if (error) throw error;
+                
+                allUsers = data || [];
+                renderUsers();
+                updateUserStats();
+                
+                console.log("Users loaded:", allUsers.length);
+            } catch (err) {
+                console.error("Error fetching users:", err);
+                showNotification("Gagal memuat data pengguna: " + err.message, 'error');
+            }
+        }
+
+        function updateUserStats() {
+            const counts = { 
+                'Dosen': 0, 
+                'Asisten': 0, 
+                'Admin': 0 
+            };
+            
+            allUsers.forEach(user => {
+                if (counts.hasOwnProperty(user.role)) {
+                    counts[user.role]++;
+                }
+            });
+            
+            // Update counts
+            for (let role in counts) {
+                const el = document.getElementById(`count-${role.toLowerCase()}`);
+                if(el) el.innerText = counts[role];
+            }
+            
+            // Update total count
+            const totalEl = document.getElementById('count-users-total');
+            if(totalEl) totalEl.innerText = allUsers.length;
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('users-table-body');
+            if (!container) return;
+            
+            if (!allUsers || allUsers.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-12 text-gray-400">
+                            <i class="fas fa-users text-3xl mb-4 opacity-20"></i>
+                            <p>Belum ada data pengguna</p>
+                            <button onclick="openUserModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                <i class="fas fa-user-plus mr-2"></i>Tambah User Pertama
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            container.innerHTML = allUsers.map((user, index) => {
+                const roleColor = user.role === 'Dosen' ? 'bg-blue-100 text-blue-800' :
+                                user.role === 'Asisten' ? 'bg-green-100 text-green-800' :
+                                'bg-red-100 text-red-800';
+                
+                const statusColor = user.status === 'Aktif' ? 'bg-green-100 text-green-800' :
+                                  user.status === 'Nonaktif' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800';
+                
+                return `
+                    <tr>
+                        <td class="py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
+                                    ${user.nama.charAt(0)}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">${user.nama}</p>
+                                    <p class="text-xs text-gray-500">${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${roleColor}">${user.role}</span>
+                        </td>
+                        <td class="text-sm text-gray-600">${user.email}</td>
+                        <td class="text-sm text-gray-600">${user.nip}</td>
+                        <td class="text-sm text-gray-600 max-w-xs truncate" title="${user.matakuliah || '-'}">${user.matakuliah || '-'}</td>
+                        <td>
+                            <span class="status-badge ${statusColor}">${user.status || 'Aktif'}</span>
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button onclick="editUser('${user.id}')" class="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteUser('${user.id}')" class="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Hapus">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openUserModal() {
+            const form = document.getElementById('form-user');
+            if (form) form.reset();
+            
+            document.getElementById('user-id').value = "";
+            document.getElementById('modal-user-title').innerText = "Tambah Pengguna Baru";
+            document.getElementById('btn-user-text').innerText = "Simpan User";
+            
+            // Set default password
+            document.getElementById('user-password').value = "password123";
+            document.getElementById('user-confirm-password').value = "password123";
+            
+            toggleModal('modal-user');
+        }
+
+        async function editUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) {
+                showNotification("User tidak ditemukan", "error");
+                return;
+            }
+
+            document.getElementById('user-id').value = user.id;
+            document.getElementById('user-nama').value = user.nama || "";
+            document.getElementById('user-role').value = user.role || "Dosen";
+            document.getElementById('user-email').value = user.email || "";
+            document.getElementById('user-nip').value = user.nip || "";
+            document.getElementById('user-matakuliah').value = user.matakuliah || "";
+            document.getElementById('user-telepon').value = user.telepon || "";
+            document.getElementById('user-status').value = user.status || "Aktif";
+            
+            document.getElementById('modal-user-title').innerText = "Edit Pengguna";
+            document.getElementById('btn-user-text').innerText = "Update User";
+            
+            // Kosongkan password saat edit
+            document.getElementById('user-password').value = "";
+            document.getElementById('user-confirm-password').value = "";
+            
+            toggleModal('modal-user');
+        }
+
+        async function deleteUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) {
+                showNotification("User tidak ditemukan", "error");
+                return;
+            }
+
+            if (!confirm(`Hapus user "${user.nama}"? Tindakan ini tidak dapat dibatalkan.`)) {
+                return;
+            }
+
+            try {
+                showNotification("Menghapus user...", "info");
+                
+                const { error } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                
+                showNotification("User berhasil dihapus.", "success");
+                await fetchUsers();
+            } catch (err) {
+                console.error("Error deleting user:", err);
+                showNotification("Gagal menghapus user: " + err.message, 'error');
+            }
+        }
+
+        // Handle form submission for users
+        const userForm = document.getElementById('form-user');
+        if (userForm) {
+            userForm.onsubmit = async (e) => {
+                e.preventDefault();
+                
+                const userId = document.getElementById('user-id').value;
+                const nama = document.getElementById('user-nama').value;
+                const role = document.getElementById('user-role').value;
+                const email = document.getElementById('user-email').value;
+                const nip = document.getElementById('user-nip').value;
+                const password = document.getElementById('user-password').value;
+                const confirmPassword = document.getElementById('user-confirm-password').value;
+                const matakuliah = document.getElementById('user-matakuliah').value;
+                const telepon = document.getElementById('user-telepon').value;
+                const status = document.getElementById('user-status').value;
+                
+                // Validasi password
+                if (password !== confirmPassword) {
+                    showNotification("Password dan konfirmasi password tidak cocok", "error");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showNotification("Password minimal 6 karakter", "error");
+                    return;
+                }
+                
+                const btn = document.getElementById('btn-submit-user');
+                const btnLoader = document.getElementById('btn-user-loader');
+                const btnText = document.getElementById('btn-user-text');
+                
+                if (btn) btn.disabled = true;
+                if (btnLoader) btnLoader.classList.remove('hidden');
+                if (btnText) btnText.innerText = "Menyimpan...";
+
+                try {
+                    const userData = { 
+                        nama,
+                        role,
+                        email,
+                        nip,
+                        matakuliah,
+                        telepon,
+                        status
+                    };
+                    
+                    // Tambahkan password hanya untuk user baru atau jika diubah
+                    if (!userId || password) {
+                        // Dalam aplikasi nyata, password harus di-hash terlebih dahulu
+                        userData.password = btoa(password); // Hanya contoh, gunakan hashing yang aman di produksi
+                    }
+
+                    let error;
+                    if (userId) {
+                        const { error: updateError } = await supabaseClient
+                            .from('users')
+                            .update(userData)
+                            .eq('id', userId);
+                        error = updateError;
+                    } else {
+                        const { error: insertError } = await supabaseClient
+                            .from('users')
+                            .insert([userData]);
+                        error = insertError;
+                    }
+
+                    if (error) throw error;
+
+                    showNotification(userId ? "User berhasil diperbarui!" : "User berhasil ditambahkan!", "success");
+                    toggleModal('modal-user');
+                    await fetchUsers();
+                } catch (err) {
+                    console.error("Error saving user:", err);
+                    showNotification("Gagal menyimpan user: " + err.message, 'error');
+                } finally {
+                    if (btn) btn.disabled = false;
+                    if (btnLoader) btnLoader.classList.add('hidden');
+                    if (btnText) btnText.innerText = userId ? "Update User" : "Simpan User";
+                }
+            };
         }
 
         // =============== DOKUMEN MANAGEMENT ===============
@@ -932,32 +1426,18 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         }
 
-        async function fetchMataKuliah() {
+        async function fetchNilaiByTugas(tugasId) {
             try {
                 const { data, error } = await supabaseClient
-                    .from('mata_kuliah')
+                    .from('nilai_tugas')
                     .select('*')
-                    .order('nama_mk', { ascending: true });
+                    .eq('tugas_id', tugasId);
                 
                 if (error) throw error;
-                
-                allMataKuliah = data || [];
-                
-                // Jika belum ada data, buat data dummy
-                if (allMataKuliah.length === 0) {
-                    allMataKuliah = [
-                        { kode_mk: 'CS101', nama_mk: 'Algoritma dan Pemrograman' },
-                        { kode_mk: 'CS102', nama_mk: 'Struktur Data' },
-                        { kode_mk: 'CS201', nama_mk: 'Basis Data' },
-                        { kode_mk: 'CS202', nama_mk: 'Jaringan Komputer' },
-                        { kode_mk: 'CS301', nama_mk: 'Kecerdasan Buatan' }
-                    ];
-                }
-                
-                console.log("Mata kuliah loaded:", allMataKuliah.length);
+                return data || [];
             } catch (err) {
-                console.error("Error fetching mata kuliah:", err);
-                allMataKuliah = [];
+                console.error("Error fetching nilai:", err);
+                return [];
             }
         }
 
@@ -972,15 +1452,15 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 return deadline > now && deadline <= nextWeek;
             }).length;
             
-            const dikumpulkan = allTugas.reduce((sum, t) => sum + (t.jumlah_submission || 0), 0);
-            const belumDinilai = allTugas.filter(t => t.status_penilaian !== 'Selesai').length;
+            const belumDinilai = allTugas.filter(t => t.status_penilaian === 'Belum Dinilai').length;
+            const sudahDinilai = allTugas.filter(t => t.status_penilaian === 'Selesai Dinilai').length;
             
             // Update UI
             const elements = {
                 'count-tugas-total': total,
                 'count-deadline': deadlineThisWeek,
-                'count-dikumpulkan': dikumpulkan,
-                'count-belum-dinilai': belumDinilai
+                'count-belum-dinilai': belumDinilai,
+                'count-sudah-dinilai': sudahDinilai
             };
             
             for (const [id, value] of Object.entries(elements)) {
@@ -1010,20 +1490,20 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 case 'aktif':
                     filtered = allTugas.filter(t => {
                         if (!t.deadline) return false;
-                        return new Date(t.deadline) > now;
+                        return new Date(t.deadline) > now && t.status_penilaian !== 'Selesai Dinilai';
                     });
                     break;
                 case 'selesai':
                     filtered = allTugas.filter(t => {
                         if (!t.deadline) return false;
-                        return new Date(t.deadline) <= now;
+                        return new Date(t.deadline) <= now || t.status_penilaian === 'Selesai Dinilai';
                     });
                     break;
                 case 'terlambat':
                     filtered = allTugas.filter(t => {
-                        if (!t.deadline || !t.total_mahasiswa) return false;
+                        if (!t.deadline) return false;
                         const deadline = new Date(t.deadline);
-                        return deadline < now && (t.jumlah_submission || 0) < t.total_mahasiswa;
+                        return deadline < now && t.status_penilaian !== 'Selesai Dinilai';
                     });
                     break;
                 // 'semua' tidak perlu filter
@@ -1078,7 +1558,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                         <i class="fas fa-clipboard-list text-4xl mb-4 opacity-20"></i>
                         <p>Tidak ada tugas ditemukan.</p>
                         <button onclick="openTugasModal()" class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-plus mr-2"></i>Buat Tugas Pertama
+                            <i class="fas fa-plus mr-2"></i>Catat Tugas Pertama
                         </button>
                     </div>
                 `;
@@ -1087,26 +1567,29 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             container.innerHTML = tugasList.map(tugas => {
                 const deadline = new Date(tugas.deadline);
-                const isOverdue = deadline < now;
+                const isOverdue = deadline < now && tugas.status_penilaian !== 'Selesai Dinilai';
                 const isActive = deadline > now;
-                const submissionRate = tugas.total_mahasiswa ? 
-                    Math.round((tugas.jumlah_submission || 0) / tugas.total_mahasiswa * 100) : 0;
                 
-                // Determine status color
+                // Determine status color based on penilaian
                 let statusColor = 'bg-gray-100 text-gray-800';
-                if (isOverdue) {
-                    statusColor = 'bg-red-100 text-red-800';
-                } else if (tugas.status_penilaian === 'Selesai') {
+                if (tugas.status_penilaian === 'Selesai Dinilai') {
                     statusColor = 'bg-green-100 text-green-800';
+                } else if (tugas.status_penilaian === 'Sedang Dinilai') {
+                    statusColor = 'bg-yellow-100 text-yellow-800';
+                } else if (isOverdue) {
+                    statusColor = 'bg-red-100 text-red-800';
                 } else if (isActive) {
                     statusColor = 'bg-blue-100 text-blue-800';
                 }
                 
-                // Determine progress bar color
+                // Determine progress of grading
+                const progressRate = tugas.jumlah_mahasiswa ? 
+                    Math.round((tugas.telah_dinilai || 0) / tugas.jumlah_mahasiswa * 100) : 0;
+                
                 let progressColor = 'bg-red-500';
-                if (submissionRate >= 80) {
+                if (progressRate >= 80) {
                     progressColor = 'bg-green-500';
-                } else if (submissionRate >= 50) {
+                } else if (progressRate >= 50) {
                     progressColor = 'bg-yellow-500';
                 }
                 
@@ -1121,7 +1604,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                                 </p>
                             </div>
                             <span class="status-badge ${statusColor} whitespace-nowrap ml-2">
-                                ${isOverdue ? 'TERLAMBAT' : (tugas.status_penilaian || (isActive ? 'AKTIF' : 'SELESAI'))}
+                                ${tugas.status_penilaian || (isOverdue ? 'TERLAMBAT' : (isActive ? 'AKTIF' : 'SELESAI'))}
                             </span>
                         </div>
                         
@@ -1129,22 +1612,22 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                         
                         <div class="grid grid-cols-2 gap-3 mb-4">
                             <div class="text-center bg-gray-50 p-3 rounded-lg">
-                                <p class="text-xs text-gray-500">Mulai</p>
-                                <p class="font-semibold text-sm">${formatDateShort(tugas.tanggal_mulai)}</p>
+                                <p class="text-xs text-gray-500">Diberikan</p>
+                                <p class="font-semibold text-sm">${formatDateShort(tugas.tanggal_diberikan)}</p>
                             </div>
                             <div class="text-center ${isOverdue ? 'bg-red-50' : 'bg-gray-50'} p-3 rounded-lg">
                                 <p class="text-xs ${isOverdue ? 'text-red-500' : 'text-gray-500'}">Deadline</p>
-                                <p class="font-semibold text-sm ${isOverdue ? 'text-red-600' : 'text-gray-800'}">${formatDateTimeShort(deadline)}</p>
+                                <p class="font-semibold text-sm ${isOverdue ? 'text-red-600' : 'text-gray-800'}">${formatDateShort(deadline)}</p>
                             </div>
                         </div>
                         
                         <div class="mb-4">
                             <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>Pengumpulan: ${tugas.jumlah_submission || 0}/${tugas.total_mahasiswa || 0}</span>
-                                <span>${submissionRate}%</span>
+                                <span>Penilaian: ${tugas.telah_dinilai || 0}/${tugas.jumlah_mahasiswa || 0}</span>
+                                <span>${progressRate}%</span>
                             </div>
                             <div class="progress-bar bg-gray-200">
-                                <div class="progress-fill ${progressColor}" style="width: ${submissionRate}%"></div>
+                                <div class="progress-fill ${progressColor}" style="width: ${progressRate}%"></div>
                             </div>
                         </div>
                         
@@ -1177,213 +1660,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     </div>
                 `;
             }).join('');
-        }
-
-        // =============== KALENDER FUNCTIONS ===============
-        function generateCalendar() {
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-            
-            // Update month header
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            const monthHeader = document.getElementById('current-month');
-            if (monthHeader) {
-                monthHeader.textContent = `${monthNames[month]} ${year}`;
-            }
-            
-            // Get first day of month
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            
-            // Clear previous days
-            const container = document.getElementById('calendar-days');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            // Add empty cells for days before first day
-            const firstDayIndex = firstDay.getDay();
-            for (let i = 0; i < firstDayIndex; i++) {
-                const emptyDiv = document.createElement('div');
-                emptyDiv.className = 'calendar-day opacity-0';
-                container.appendChild(emptyDiv);
-            }
-            
-            // Add days of the month
-            const today = new Date();
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day hover:bg-gray-100 transition-colors';
-                dayDiv.textContent = day;
-                dayDiv.onclick = () => showDayEvents(year, month, day);
-                
-                const currentDate = new Date(year, month, day);
-                if (currentDate.toDateString() === today.toDateString()) {
-                    dayDiv.classList.add('active');
-                }
-                
-                // Check if there are events on this day
-                if (hasEventsOnDate(currentDate)) {
-                    dayDiv.classList.add('has-event');
-                    dayDiv.title = "Ada deadline atau tugas dimulai";
-                }
-                
-                container.appendChild(dayDiv);
-            }
-        }
-
-        function changeMonth(delta) {
-            currentMonth.setMonth(currentMonth.getMonth() + delta);
-            generateCalendar();
-            setTodayEvents();
-        }
-
-        function hasEventsOnDate(date) {
-            if (!allTugas || allTugas.length === 0) return false;
-            
-            return allTugas.some(tugas => {
-                try {
-                    if (!tugas.tanggal_mulai && !tugas.deadline) return false;
-                    
-                    const startDate = tugas.tanggal_mulai ? new Date(tugas.tanggal_mulai) : null;
-                    const deadline = tugas.deadline ? new Date(tugas.deadline) : null;
-                    
-                    return (startDate && startDate.toDateString() === date.toDateString()) ||
-                           (deadline && deadline.toDateString() === date.toDateString());
-                } catch (e) {
-                    return false;
-                }
-            });
-        }
-
-        function setTodayEvents() {
-            const today = new Date();
-            const todayEvents = allTugas.filter(t => {
-                try {
-                    if (!t.tanggal_mulai && !t.deadline) return false;
-                    
-                    const start = t.tanggal_mulai ? new Date(t.tanggal_mulai) : null;
-                    const deadline = t.deadline ? new Date(t.deadline) : null;
-                    
-                    return (start && start.toDateString() === today.toDateString()) ||
-                           (deadline && deadline.toDateString() === today.toDateString());
-                } catch (e) {
-                    return false;
-                }
-            });
-            
-            const container = document.getElementById('today-events');
-            if (!container) return;
-            
-            if (todayEvents.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-gray-400">
-                        <i class="fas fa-calendar-check text-2xl mb-2 opacity-20"></i>
-                        <p>Tidak ada acara hari ini</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = todayEvents.slice(0, 5).map(event => {
-                const isDeadline = event.deadline && new Date(event.deadline).toDateString() === today.toDateString();
-                
-                return `
-                    <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onclick="viewTugasDetail('${event.id}')">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-medium text-gray-800 text-sm line-clamp-1">${event.judul}</h4>
-                                <p class="text-xs text-gray-500 mt-1">${event.matakuliah || 'Mata Kuliah'}</p>
-                            </div>
-                            <span class="text-xs font-medium ${isDeadline ? 'text-red-600' : 'text-blue-600'} px-2 py-1 rounded bg-white">
-                                ${isDeadline ? 'DEADLINE' : 'MULAI'}
-                            </span>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-2">
-                            <i class="fas fa-clock mr-1"></i>${formatDateTimeShort(new Date(isDeadline ? event.deadline : event.tanggal_mulai))}
-                        </p>
-                    </div>
-                `;
-            }).join('');
-            
-            // Update upcoming deadlines
-            updateUpcomingDeadlines();
-        }
-
-        function updateUpcomingDeadlines() {
-            const now = new Date();
-            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            
-            const upcoming = allTugas
-                .filter(t => {
-                    try {
-                        if (!t.deadline) return false;
-                        const deadline = new Date(t.deadline);
-                        return deadline > now && deadline <= nextWeek;
-                    } catch (e) {
-                        return false;
-                    }
-                })
-                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                .slice(0, 5);
-            
-            const container = document.getElementById('upcoming-deadlines');
-            if (!container) return;
-            
-            if (upcoming.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-gray-400">
-                        <i class="fas fa-flag-checkered text-2xl mb-2 opacity-20"></i>
-                        <p>Tidak ada deadline mendatang</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = upcoming.map(tugas => `
-                <div class="border-l-4 border-orange-500 pl-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer" 
-                     onclick="viewTugasDetail('${tugas.id}')">
-                    <h4 class="font-medium text-gray-800 text-sm line-clamp-1" title="${tugas.judul}">${tugas.judul}</h4>
-                    <div class="flex justify-between items-center mt-1">
-                        <span class="text-xs text-gray-500 truncate max-w-[120px]" title="${tugas.matakuliah || 'Mata Kuliah'}">
-                            ${tugas.matakuliah || 'Mata Kuliah'}
-                        </span>
-                        <span class="text-xs font-medium text-orange-600 whitespace-nowrap">
-                            ${formatDateShort(new Date(tugas.deadline))}
-                        </span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function showDayEvents(year, month, day) {
-            const date = new Date(year, month, day);
-            const events = allTugas.filter(t => {
-                try {
-                    if (!t.tanggal_mulai && !t.deadline) return false;
-                    
-                    const start = t.tanggal_mulai ? new Date(t.tanggal_mulai) : null;
-                    const deadline = t.deadline ? new Date(t.deadline) : null;
-                    
-                    return (start && start.toDateString() === date.toDateString()) ||
-                           (deadline && deadline.toDateString() === date.toDateString());
-                } catch (e) {
-                    return false;
-                }
-            });
-            
-            if (events.length > 0) {
-                let message = `Acara pada ${formatDate(date)}:\n`;
-                events.forEach(event => {
-                    const isDeadline = event.deadline && new Date(event.deadline).toDateString() === date.toDateString();
-                    message += `\n• ${event.judul} (${isDeadline ? 'Deadline' : 'Mulai'})`;
-                });
-                alert(message);
-            } else {
-                showNotification(`Tidak ada acara pada ${formatDate(date)}`, 'info');
-            }
         }
 
         // =============== MODAL FUNCTIONS ===============
@@ -1420,24 +1696,21 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
             // Set default dates
             const now = new Date();
-            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
             
-            const tanggalMulai = document.getElementById('tanggal-mulai');
+            const tanggalDiberikan = document.getElementById('tanggal-diberikan');
             const deadline = document.getElementById('deadline');
             
-            if (tanggalMulai) {
-                tanggalMulai.value = formatDateForInput(now);
-                tanggalMulai.min = formatDateForInput(now);
+            if (tanggalDiberikan) {
+                tanggalDiberikan.value = formatDateForInput(now);
             }
             
             if (deadline) {
-                deadline.value = formatDateTimeForInput(tomorrow);
-                deadline.min = formatDateTimeForInput(now);
+                deadline.value = formatDateForInput(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
             }
             
             // Set judul modal
             const modalTitle = document.getElementById('modal-tugas-title');
-            if (modalTitle) modalTitle.innerText = "Tugas Perkuliahan Baru";
+            if (modalTitle) modalTitle.innerText = "Catat Tugas Perkuliahan";
             
             // Set teks tombol
             const btnText = document.getElementById('btn-tugas-text');
@@ -1625,11 +1898,14 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 const matakuliah = document.getElementById('matakuliah').value;
                 const kelas = document.getElementById('kelas').value;
                 const judul = document.getElementById('judul-tugas').value;
-                const tanggal_mulai = document.getElementById('tanggal-mulai').value;
+                const tanggal_diberikan = document.getElementById('tanggal-diberikan').value;
                 const deadline = document.getElementById('deadline').value;
                 const bobot = parseInt(document.getElementById('bobot').value) || 10;
                 const jenis_tugas = document.getElementById('jenis-tugas').value;
+                const jumlah_mahasiswa = parseInt(document.getElementById('jumlah-mahasiswa').value) || 30;
+                const status_penilaian = document.getElementById('status-penilaian').value;
                 const deskripsi = document.getElementById('deskripsi-tugas').value;
+                const catatan = document.getElementById('catatan').value;
                 const fileInput = document.getElementById('file-tugas');
                 const file = fileInput.files[0];
                 
@@ -1672,17 +1948,18 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                         matakuliah,
                         kelas: kelas || null,
                         judul,
-                        tanggal_mulai,
+                        tanggal_diberikan,
                         deadline,
                         bobot,
                         jenis_tugas,
+                        jumlah_mahasiswa,
+                        status_penilaian,
                         deskripsi,
+                        catatan: catatan || null,
                         file_instruksi: fileUrl,
                         dibuat_oleh: currentUser.name,
                         dibuat_id: currentUser.id,
-                        status_penilaian: 'Belum Dimulai',
-                        jumlah_submission: 0,
-                        total_mahasiswa: 0
+                        telah_dinilai: 0
                     };
 
                     let error;
@@ -1701,7 +1978,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
                     if (error) throw error;
 
-                    showNotification(tugasId ? "Tugas berhasil diperbarui!" : "Tugas berhasil dibuat!", "success");
+                    showNotification(tugasId ? "Tugas berhasil diperbarui!" : "Tugas berhasil dicatat!", "success");
                     toggleModal('modal-tugas');
                     await fetchTugas();
                 } catch (err) {
@@ -1766,7 +2043,9 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
         async function deleteTugasDetail() {
-            const tugasId = document.getElementById('tugas-id')?.value;
+            const modal = document.getElementById('modal-detail-tugas');
+            const tugasId = modal.querySelector('#tugas-id')?.value;
+            
             if (!tugasId) {
                 showNotification("Tugas ID tidak ditemukan", "error");
                 return;
@@ -1778,13 +2057,20 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 return;
             }
 
-            if (!confirm(`Hapus tugas "${tugas.judul}"? Semua data submission akan hilang.`)) {
+            if (!confirm(`Hapus tugas "${tugas.judul}"? Semua data nilai akan hilang.`)) {
                 return;
             }
 
             try {
                 showNotification("Menghapus tugas...", "info");
                 
+                // Hapus semua nilai terkait tugas ini
+                await supabaseClient
+                    .from('nilai_tugas')
+                    .delete()
+                    .eq('tugas_id', tugasId);
+                
+                // Hapus tugas
                 const { error } = await supabaseClient
                     .from('tugas_perkuliahan')
                     .delete()
@@ -1798,6 +2084,213 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             } catch (err) {
                 console.error("Error deleting tugas:", err);
                 showNotification("Gagal menghapus tugas: " + err.message, 'error');
+            }
+        }
+
+        // =============== KALENDER FUNCTIONS ===============
+        function generateCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            // Update month header
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const monthHeader = document.getElementById('current-month');
+            if (monthHeader) {
+                monthHeader.textContent = `${monthNames[month]} ${year}`;
+            }
+            
+            // Get first day of month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            
+            // Clear previous days
+            const container = document.getElementById('calendar-days');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // Add empty cells for days before first day
+            const firstDayIndex = firstDay.getDay();
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'calendar-day opacity-0';
+                container.appendChild(emptyDiv);
+            }
+            
+            // Add days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day hover:bg-gray-100 transition-colors';
+                dayDiv.textContent = day;
+                dayDiv.onclick = () => showDayEvents(year, month, day);
+                
+                const currentDate = new Date(year, month, day);
+                if (currentDate.toDateString() === today.toDateString()) {
+                    dayDiv.classList.add('active');
+                }
+                
+                // Check if there are events on this day
+                if (hasEventsOnDate(currentDate)) {
+                    dayDiv.classList.add('has-event');
+                    dayDiv.title = "Ada deadline atau tugas diberikan";
+                }
+                
+                container.appendChild(dayDiv);
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            generateCalendar();
+            setTodayEvents();
+        }
+
+        function hasEventsOnDate(date) {
+            if (!allTugas || allTugas.length === 0) return false;
+            
+            return allTugas.some(tugas => {
+                try {
+                    if (!tugas.tanggal_diberikan && !tugas.deadline) return false;
+                    
+                    const startDate = tugas.tanggal_diberikan ? new Date(tugas.tanggal_diberikan) : null;
+                    const deadline = tugas.deadline ? new Date(tugas.deadline) : null;
+                    
+                    return (startDate && startDate.toDateString() === date.toDateString()) ||
+                           (deadline && deadline.toDateString() === date.toDateString());
+                } catch (e) {
+                    return false;
+                }
+            });
+        }
+
+        function setTodayEvents() {
+            const today = new Date();
+            const todayEvents = allTugas.filter(t => {
+                try {
+                    if (!t.tanggal_diberikan && !t.deadline) return false;
+                    
+                    const start = t.tanggal_diberikan ? new Date(t.tanggal_diberikan) : null;
+                    const deadline = t.deadline ? new Date(t.deadline) : null;
+                    
+                    return (start && start.toDateString() === today.toDateString()) ||
+                           (deadline && deadline.toDateString() === today.toDateString());
+                } catch (e) {
+                    return false;
+                }
+            });
+            
+            const container = document.getElementById('today-events');
+            if (!container) return;
+            
+            if (todayEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-400">
+                        <i class="fas fa-calendar-check text-2xl mb-2 opacity-20"></i>
+                        <p>Tidak ada acara hari ini</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = todayEvents.slice(0, 5).map(event => {
+                const isDeadline = event.deadline && new Date(event.deadline).toDateString() === today.toDateString();
+                
+                return `
+                    <div class="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onclick="viewTugasDetail('${event.id}')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-medium text-gray-800 text-sm line-clamp-1">${event.judul}</h4>
+                                <p class="text-xs text-gray-500 mt-1">${event.matakuliah || 'Mata Kuliah'}</p>
+                            </div>
+                            <span class="text-xs font-medium ${isDeadline ? 'text-red-600' : 'text-blue-600'} px-2 py-1 rounded bg-white">
+                                ${isDeadline ? 'DEADLINE' : 'DIBERIKAN'}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2">
+                            <i class="fas fa-clock mr-1"></i>${formatDateShort(new Date(isDeadline ? event.deadline : event.tanggal_diberikan))}
+                        </p>
+                    </div>
+                `;
+            }).join('');
+            
+            // Update upcoming deadlines
+            updateUpcomingDeadlines();
+        }
+
+        function updateUpcomingDeadlines() {
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            const upcoming = allTugas
+                .filter(t => {
+                    try {
+                        if (!t.deadline) return false;
+                        const deadline = new Date(t.deadline);
+                        return deadline > now && deadline <= nextWeek;
+                    } catch (e) {
+                        return false;
+                    }
+                })
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .slice(0, 5);
+            
+            const container = document.getElementById('upcoming-deadlines');
+            if (!container) return;
+            
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-400">
+                        <i class="fas fa-flag-checkered text-2xl mb-2 opacity-20"></i>
+                        <p>Tidak ada deadline mendatang</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = upcoming.map(tugas => `
+                <div class="border-l-4 border-orange-500 pl-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer" 
+                     onclick="viewTugasDetail('${tugas.id}')">
+                    <h4 class="font-medium text-gray-800 text-sm line-clamp-1" title="${tugas.judul}">${tugas.judul}</h4>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-xs text-gray-500 truncate max-w-[120px]" title="${tugas.matakuliah || 'Mata Kuliah'}">
+                            ${tugas.matakuliah || 'Mata Kuliah'}
+                        </span>
+                        <span class="text-xs font-medium text-orange-600 whitespace-nowrap">
+                            ${formatDateShort(new Date(tugas.deadline))}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showDayEvents(year, month, day) {
+            const date = new Date(year, month, day);
+            const events = allTugas.filter(t => {
+                try {
+                    if (!t.tanggal_diberikan && !t.deadline) return false;
+                    
+                    const start = t.tanggal_diberikan ? new Date(t.tanggal_diberikan) : null;
+                    const deadline = t.deadline ? new Date(t.deadline) : null;
+                    
+                    return (start && start.toDateString() === date.toDateString()) ||
+                           (deadline && deadline.toDateString() === date.toDateString());
+                } catch (e) {
+                    return false;
+                }
+            });
+            
+            if (events.length > 0) {
+                let message = `Acara pada ${formatDate(date)}:\n`;
+                events.forEach(event => {
+                    const isDeadline = event.deadline && new Date(event.deadline).toDateString() === date.toDateString();
+                    message += `\n• ${event.judul} (${isDeadline ? 'Deadline' : 'Tugas Diberikan'})`;
+                });
+                alert(message);
+            } else {
+                showNotification(`Tidak ada acara pada ${formatDate(date)}`, 'info');
             }
         }
 
@@ -2029,17 +2522,20 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             document.getElementById('judul-tugas').value = tugas.judul || "";
             
             // Format dates for input
-            if (tugas.tanggal_mulai) {
-                document.getElementById('tanggal-mulai').value = formatDateForInput(new Date(tugas.tanggal_mulai));
+            if (tugas.tanggal_diberikan) {
+                document.getElementById('tanggal-diberikan').value = formatDateForInput(new Date(tugas.tanggal_diberikan));
             }
             
             if (tugas.deadline) {
-                document.getElementById('deadline').value = formatDateTimeForInput(new Date(tugas.deadline));
+                document.getElementById('deadline').value = formatDateForInput(new Date(tugas.deadline));
             }
             
             document.getElementById('bobot').value = tugas.bobot || 10;
             document.getElementById('jenis-tugas').value = tugas.jenis_tugas || 'Individu';
+            document.getElementById('jumlah-mahasiswa').value = tugas.jumlah_mahasiswa || 30;
+            document.getElementById('status-penilaian').value = tugas.status_penilaian || 'Belum Dinilai';
             document.getElementById('deskripsi-tugas').value = tugas.deskripsi || "";
+            document.getElementById('catatan').value = tugas.catatan || "";
             
             document.getElementById('modal-tugas-title').innerText = "Edit Tugas";
             document.getElementById('btn-tugas-text').innerText = "Update Tugas";
@@ -2058,95 +2554,313 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const detailJudul = document.getElementById('detail-judul');
             const detailMatakuliah = document.getElementById('detail-matakuliah');
             const detailDeskripsi = document.getElementById('detail-deskripsi');
-            const detailMulai = document.getElementById('detail-mulai');
+            const detailDiberikan = document.getElementById('detail-diberikan');
             const detailDeadline = document.getElementById('detail-deadline');
             const detailJenis = document.getElementById('detail-jenis');
             const detailBobot = document.getElementById('detail-bobot');
+            const detailCatatan = document.getElementById('detail-catatan');
             const detailTotalMhs = document.getElementById('detail-total-mhs');
-            const detailDikumpulkan = document.getElementById('detail-dikumpulkan');
+            const detailDinilai = document.getElementById('detail-dinilai');
             const detailPersentase = document.getElementById('detail-persentase');
             const detailProgress = document.getElementById('detail-progress');
             const detailStatusNilai = document.getElementById('detail-status-nilai');
+            const updateStatusNilai = document.getElementById('update-status-nilai');
 
             if (detailJudul) detailJudul.textContent = tugas.judul || "Tidak ada judul";
             if (detailMatakuliah) detailMatakuliah.textContent = `${tugas.matakuliah || "Mata Kuliah"} • ${tugas.kelas || "Semua Kelas"}`;
             if (detailDeskripsi) detailDeskripsi.textContent = tugas.deskripsi || "Tidak ada deskripsi";
-            if (detailMulai) detailMulai.textContent = formatDateShort(tugas.tanggal_mulai);
-            if (detailDeadline) detailDeadline.textContent = formatDateTimeShort(tugas.deadline);
+            if (detailDiberikan) detailDiberikan.textContent = formatDateShort(tugas.tanggal_diberikan);
+            if (detailDeadline) detailDeadline.textContent = formatDateShort(tugas.deadline);
             if (detailJenis) detailJenis.textContent = tugas.jenis_tugas || "Individu";
             if (detailBobot) detailBobot.textContent = `${tugas.bobot || 0}%`;
-            if (detailTotalMhs) detailTotalMhs.textContent = tugas.total_mahasiswa || 0;
-            if (detailDikumpulkan) detailDikumpulkan.textContent = tugas.jumlah_submission || 0;
+            if (detailCatatan) detailCatatan.textContent = tugas.catatan || "Tidak ada catatan";
+            if (detailTotalMhs) detailTotalMhs.textContent = tugas.jumlah_mahasiswa || 0;
+            if (detailDinilai) detailDinilai.textContent = tugas.telah_dinilai || 0;
             
-            const submissionRate = tugas.total_mahasiswa ? 
-                Math.round((tugas.jumlah_submission || 0) / tugas.total_mahasiswa * 100) : 0;
+            const progressRate = tugas.jumlah_mahasiswa ? 
+                Math.round((tugas.telah_dinilai || 0) / tugas.jumlah_mahasiswa * 100) : 0;
             
-            if (detailPersentase) detailPersentase.textContent = `${submissionRate}%`;
-            if (detailProgress) detailProgress.style.width = `${submissionRate}%`;
+            if (detailPersentase) detailPersentase.textContent = `${progressRate}%`;
+            if (detailProgress) detailProgress.style.width = `${progressRate}%`;
             
             if (detailStatusNilai) {
-                detailStatusNilai.textContent = tugas.status_penilaian || 'Belum Dimulai';
-                detailStatusNilai.className = `text-2xl font-bold ${tugas.status_penilaian === 'Selesai' ? 'text-green-600' : 'text-orange-600'}`;
+                detailStatusNilai.textContent = tugas.status_penilaian || 'Belum Dinilai';
+                const statusColor = tugas.status_penilaian === 'Selesai Dinilai' ? 'text-green-600' :
+                                  tugas.status_penilaian === 'Sedang Dinilai' ? 'text-yellow-600' : 'text-orange-600';
+                detailStatusNilai.className = `text-2xl font-bold ${statusColor}`;
+            }
+            
+            if (updateStatusNilai) {
+                updateStatusNilai.value = tugas.status_penilaian || 'Belum Dinilai';
             }
 
             // Set tugas id for edit/delete
-            document.getElementById('tugas-id').value = tugas.id;
+            const tugasIdInput = document.getElementById('tugas-id');
+            if (tugasIdInput) {
+                tugasIdInput.value = tugas.id;
+            }
 
-            // Fetch submissions for this task
-            await fetchSubmissions(id);
+            // Fetch nilai for this task
+            await fetchNilai(id);
 
             toggleModal('modal-detail-tugas');
         }
 
-        async function fetchSubmissions(tugasId) {
+        async function fetchNilai(tugasId) {
             try {
-                const { data, error } = await supabaseClient
-                    .from('tugas_submission')
-                    .select('*')
-                    .eq('tugas_id', tugasId)
-                    .order('tanggal_kumpul', { ascending: false });
-                
-                if (error) throw error;
-                
-                const submissions = data || [];
-                renderSubmissions(submissions);
+                const nilai = await fetchNilaiByTugas(tugasId);
+                renderNilai(nilai, tugasId);
             } catch (err) {
-                console.error("Error fetching submissions:", err);
-                showNotification("Gagal memuat submission", "error");
+                console.error("Error fetching nilai:", err);
+                showNotification("Gagal memuat data nilai", "error");
             }
         }
 
-        function renderSubmissions(submissions) {
-            const container = document.getElementById('list-submission');
+        function renderNilai(nilaiList, tugasId) {
+            const container = document.getElementById('list-nilai');
             if (!container) return;
             
-            if (!submissions || submissions.length === 0) {
+            if (!nilaiList || nilaiList.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-inbox text-3xl mb-3 opacity-20"></i>
-                        <p>Belum ada pengumpulan</p>
-                    </div>
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-400">
+                            <i class="fas fa-inbox text-2xl mb-3 opacity-20"></i>
+                            <p>Belum ada data nilai</p>
+                            <button onclick="openNilaiModal('${tugasId}')" class="mt-4 px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-1"></i>Tambah Nilai
+                            </button>
+                        </td>
+                    </tr>
                 `;
                 return;
             }
+
+            container.innerHTML = nilaiList.map((nilai, index) => {
+                const nilaiColor = nilai.nilai >= 80 ? 'text-green-600 font-bold' :
+                                 nilai.nilai >= 60 ? 'text-yellow-600' : 'text-red-600';
+                
+                return `
+                    <tr>
+                        <td class="text-sm text-gray-600">${index + 1}</td>
+                        <td class="text-sm font-medium text-gray-800">${nilai.mahasiswa_nim}</td>
+                        <td class="text-sm text-gray-800">${nilai.mahasiswa_nama}</td>
+                        <td class="${nilaiColor}">${nilai.nilai}</td>
+                        <td>
+                            <span class="text-xs px-2 py-1 rounded ${nilaiColor.replace('text-', 'bg-').replace('600', '100')} ${nilaiColor}">
+                                ${nilai.nilai >= 80 ? 'A' : nilai.nilai >= 70 ? 'B' : nilai.nilai >= 60 ? 'C' : nilai.nilai >= 50 ? 'D' : 'E'}
+                            </span>
+                        </td>
+                        <td class="text-sm text-gray-600">${nilai.tanggal_dinilai ? formatDateShort(nilai.tanggal_dinilai) : '-'}</td>
+                        <td>
+                            <div class="flex gap-2">
+                                <button onclick="editNilai('${nilai.id}', '${tugasId}')" class="p-1 text-gray-400 hover:text-blue-600" title="Edit">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </button>
+                                <button onclick="deleteNilai('${nilai.id}', '${tugasId}')" class="p-1 text-gray-400 hover:text-red-500" title="Hapus">
+                                    <i class="fas fa-trash-alt text-sm"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openNilaiModal(tugasId, nilaiId = null) {
+            const form = document.getElementById('form-nilai');
+            if (form) form.reset();
             
-            container.innerHTML = submissions.map(sub => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div>
-                        <h4 class="font-medium text-gray-800">${sub.mahasiswa_nama}</h4>
-                        <p class="text-xs text-gray-500">NIM: ${sub.mahasiswa_nim}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm ${sub.nilai ? 'text-green-600 font-bold' : 'text-gray-500'}">
-                            ${sub.nilai ? `Nilai: ${sub.nilai}` : 'Belum dinilai'}
-                        </span>
-                        <button onclick="downloadFile('${sub.file_url}', '${sub.mahasiswa_nim}_${sub.mahasiswa_nama}.pdf')" 
-                                class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-download"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+            document.getElementById('nilai-id').value = nilaiId || "";
+            document.getElementById('nilai-tugas-id').value = tugasId;
+            
+            if (nilaiId) {
+                // Edit mode - find existing nilai
+                const nilaiList = Array.from(document.querySelectorAll('#list-nilai tr')).map(tr => {
+                    const cells = tr.querySelectorAll('td');
+                    if (cells.length >= 7) {
+                        return {
+                            nim: cells[1].textContent,
+                            nama: cells[2].textContent
+                        };
+                    }
+                    return null;
+                }).filter(n => n);
+                
+                if (nilaiList.length > 0) {
+                    document.getElementById('nilai-nim').value = nilaiList[0].nim;
+                    document.getElementById('nilai-nama').value = nilaiList[0].nama;
+                }
+            }
+            
+            toggleModal('modal-nilai');
+        }
+
+        async function editNilai(nilaiId, tugasId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('nilai_tugas')
+                    .select('*')
+                    .eq('id', nilaiId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (data) {
+                    document.getElementById('nilai-id').value = data.id;
+                    document.getElementById('nilai-tugas-id').value = tugasId;
+                    document.getElementById('nilai-nim').value = data.mahasiswa_nim;
+                    document.getElementById('nilai-nama').value = data.mahasiswa_nama;
+                    document.getElementById('nilai').value = data.nilai;
+                    document.getElementById('nilai-komentar').value = data.komentar || "";
+                    
+                    toggleModal('modal-nilai');
+                }
+            } catch (err) {
+                console.error("Error fetching nilai:", err);
+                showNotification("Gagal memuat data nilai", "error");
+            }
+        }
+
+        async function deleteNilai(nilaiId, tugasId) {
+            if (!confirm("Hapus nilai ini?")) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('nilai_tugas')
+                    .delete()
+                    .eq('id', nilaiId);
+                
+                if (error) throw error;
+                
+                showNotification("Nilai berhasil dihapus", "success");
+                await fetchNilai(tugasId);
+                
+                // Update tugas progress
+                const tugas = allTugas.find(t => t.id === tugasId);
+                if (tugas) {
+                    const newTelahDinilai = Math.max(0, (tugas.telah_dinilai || 0) - 1);
+                    
+                    await supabaseClient
+                        .from('tugas_perkuliahan')
+                        .update({ telah_dinilai: newTelahDinilai })
+                        .eq('id', tugasId);
+                    
+                    await fetchTugas();
+                }
+            } catch (err) {
+                console.error("Error deleting nilai:", err);
+                showNotification("Gagal menghapus nilai", "error");
+            }
+        }
+
+        // Handle form submission for nilai
+        const nilaiForm = document.getElementById('form-nilai');
+        if (nilaiForm) {
+            nilaiForm.onsubmit = async (e) => {
+                e.preventDefault();
+                
+                const nilaiId = document.getElementById('nilai-id').value;
+                const tugasId = document.getElementById('nilai-tugas-id').value;
+                const mahasiswa_nim = document.getElementById('nilai-nim').value;
+                const mahasiswa_nama = document.getElementById('nilai-nama').value;
+                const nilai = parseInt(document.getElementById('nilai').value);
+                const komentar = document.getElementById('nilai-komentar').value;
+                
+                if (nilai < 0 || nilai > 100) {
+                    showNotification("Nilai harus antara 0-100", "error");
+                    return;
+                }
+
+                try {
+                    const nilaiData = { 
+                        tugas_id: tugasId,
+                        mahasiswa_nim,
+                        mahasiswa_nama,
+                        nilai,
+                        komentar: komentar || null,
+                        tanggal_dinilai: new Date().toISOString(),
+                        dinilai_oleh: currentUser.name
+                    };
+
+                    let error;
+                    if (nilaiId) {
+                        const { error: updateError } = await supabaseClient
+                            .from('nilai_tugas')
+                            .update(nilaiData)
+                            .eq('id', nilaiId);
+                        error = updateError;
+                    } else {
+                        const { error: insertError } = await supabaseClient
+                            .from('nilai_tugas')
+                            .insert([nilaiData]);
+                        error = insertError;
+                    }
+
+                    if (error) throw error;
+
+                    showNotification(nilaiId ? "Nilai berhasil diperbarui!" : "Nilai berhasil ditambahkan!", "success");
+                    toggleModal('modal-nilai');
+                    
+                    // Update tugas progress
+                    const tugas = allTugas.find(t => t.id === tugasId);
+                    if (tugas) {
+                        const newTelahDinilai = nilaiId ? tugas.telah_dinilai : (tugas.telah_dinilai || 0) + 1;
+                        
+                        await supabaseClient
+                            .from('tugas_perkuliahan')
+                            .update({ telah_dinilai: newTelahDinilai })
+                            .eq('id', tugasId);
+                        
+                        await fetchTugas();
+                    }
+                    
+                    await fetchNilai(tugasId);
+                } catch (err) {
+                    console.error("Error saving nilai:", err);
+                    showNotification("Gagal menyimpan nilai: " + err.message, 'error');
+                }
+            };
+        }
+
+        async function updateStatusNilai() {
+            const select = document.getElementById('update-status-nilai');
+            const tugasId = document.getElementById('tugas-id').value;
+            
+            if (!select || !tugasId) return;
+            
+            const newStatus = select.value;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('tugas_perkuliahan')
+                    .update({ status_penilaian: newStatus })
+                    .eq('id', tugasId);
+                
+                if (error) throw error;
+                
+                showNotification("Status penilaian diperbarui", "success");
+                
+                // Update tugas data
+                const tugasIndex = allTugas.findIndex(t => t.id === tugasId);
+                if (tugasIndex !== -1) {
+                    allTugas[tugasIndex].status_penilaian = newStatus;
+                }
+                
+                // Update UI
+                const detailStatus = document.getElementById('detail-status-nilai');
+                if (detailStatus) {
+                    detailStatus.textContent = newStatus;
+                    const statusColor = newStatus === 'Selesai Dinilai' ? 'text-green-600' :
+                                      newStatus === 'Sedang Dinilai' ? 'text-yellow-600' : 'text-orange-600';
+                    detailStatus.className = `text-2xl font-bold ${statusColor}`;
+                }
+                
+                // Refresh tugas list
+                renderTugasList(allTugas);
+            } catch (err) {
+                console.error("Error updating status:", err);
+                showNotification("Gagal memperbarui status", "error");
+            }
         }
 
         // =============== DOWNLOAD FUNCTIONS ===============
@@ -2183,12 +2897,13 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         }
 
-        async function downloadAllSubmissions() {
-            showNotification("Fitur download semua submission sedang dikembangkan", "info");
+        // =============== EXPORT FUNCTIONS ===============
+        function exportNilaiExcel() {
+            showNotification("Export ke Excel: Fitur akan segera tersedia", "info");
         }
 
-        function addSubmission() {
-            toggleModal('modal-submission');
+        function exportRekapTugas() {
+            showNotification("Export ke PDF: Fitur akan segera tersedia", "info");
         }
 
         function editTugasDetail() {
@@ -2202,92 +2917,82 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             setTimeout(() => editTugas(tugasId), 300);
         }
 
-        // =============== EXPORT FUNCTIONS ===============
-        function exportToExcel() {
-            showNotification("Fitur export Excel sedang dikembangkan", "info");
-        }
-
-        function exportToPDF() {
-            showNotification("Fitur export PDF sedang dikembangkan", "info");
-        }
-
-        // =============== DATA DUMMY ===============
-        async function createSampleData() {
-            if (!confirm("Buat data contoh untuk testing? Data lama mungkin akan tertimpa.")) {
+        // =============== DATA INITIALIZATION ===============
+        async function initializeSampleData() {
+            if (!confirm("Inisialisasi data contoh? Data lama akan dihapus.")) {
                 return;
             }
 
             try {
-                showNotification("Membuat data contoh...", "info");
+                showNotification("Menginisialisasi data contoh...", "info");
 
-                // Sample documents
-                const sampleDocs = [
+                // Sample users
+                const sampleUsers = [
                     {
-                        judul: "Laporan Penelitian AI 2024",
-                        nama_file: "laporan_ai_2024.pdf",
-                        kategori: "Penelitian",
-                        deskripsi: "Laporan akhir penelitian tentang penerapan AI dalam pendidikan",
-                        tahun: 2024,
-                        status: "Publik",
-                        tags: "ai, research, education",
-                        diupload_oleh: "Pak Dhe Robin",
-                        diupload_id: "1",
-                        file_url: "https://example.com/sample.pdf"
+                        nama: "Pak Dhe Robin",
+                        role: "Dosen",
+                        email: "robin@university.ac.id",
+                        nip: "198304152006041001",
+                        password: btoa("password123"),
+                        matakuliah: "Algoritma dan Struktur Data, Basis Data",
+                        telepon: "081234567890",
+                        status: "Aktif"
                     },
                     {
-                        judul: "RPS Algoritma dan Struktur Data",
-                        nama_file: "rps_algoritma.docx",
-                        kategori: "Pengajaran",
-                        deskripsi: "Rencana pembelajaran semester untuk mata kuliah Algoritma",
-                        tahun: 2024,
-                        status: "Internal",
-                        tags: "syllabus, teaching, algorithm",
-                        diupload_oleh: "Pak Dhe Robin",
-                        diupload_id: "1",
-                        file_url: "https://example.com/sample.docx"
-                    }
-                ];
-
-                // Sample tugas
-                const sampleTugas = [
+                        nama: "Dr. Budi Santoso, M.Kom",
+                        role: "Dosen",
+                        email: "budi@university.ac.id",
+                        nip: "197812032003121001",
+                        password: btoa("password123"),
+                        matakuliah: "Pemrograman Web, Jaringan Komputer",
+                        telepon: "081298765432",
+                        status: "Aktif"
+                    },
                     {
+                        nama: "Anita Wijaya",
+                        role: "Asisten",
+                        email: "anita@university.ac.id",
+                        nip: "20210001",
+                        password: btoa("password123"),
                         matakuliah: "Algoritma dan Struktur Data",
-                        kelas: "TI-3A",
-                        judul: "Tugas 1: Implementasi Stack dan Queue",
-                        deskripsi: "Buat program implementasi struktur data Stack dan Queue menggunakan bahasa pilihan",
-                        tanggal_mulai: new Date().toISOString().split('T')[0],
-                        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                        bobot: 15,
-                        jenis_tugas: "Koding",
-                        dibuat_oleh: "Pak Dhe Robin",
-                        dibuat_id: "1",
-                        status_penilaian: "Belum Dimulai",
-                        jumlah_submission: 0,
-                        total_mahasiswa: 30,
-                        file_instruksi: null
+                        telepon: "082112345678",
+                        status: "Aktif"
+                    },
+                    {
+                        nama: "Admin Sistem",
+                        role: "Admin",
+                        email: "admin@university.ac.id",
+                        nip: "ADM001",
+                        password: btoa("admin123"),
+                        matakuliah: "",
+                        telepon: "08111222333",
+                        status: "Aktif"
                     }
                 ];
 
-                // Insert sample data
-                for (const doc of sampleDocs) {
-                    await supabaseClient.from('arsip_dokumen').insert([doc]);
+                // Clear existing data
+                await supabaseClient.from('users').delete().neq('id', '0');
+                await supabaseClient.from('arsip_dokumen').delete().neq('id', '0');
+                await supabaseClient.from('tugas_perkuliahan').delete().neq('id', '0');
+                await supabaseClient.from('nilai_tugas').delete().neq('id', '0');
+
+                // Insert sample users
+                for (const user of sampleUsers) {
+                    await supabaseClient.from('users').insert([user]);
                 }
 
-                for (const tugas of sampleTugas) {
-                    await supabaseClient.from('tugas_perkuliahan').insert([tugas]);
-                }
-
-                showNotification("Data contoh berhasil dibuat!", "success");
+                showNotification("Data contoh berhasil diinisialisasi!", "success");
                 
-                // Refresh data
+                // Refresh all data
                 await Promise.all([
+                    fetchUsers(),
                     fetchDocuments(),
                     fetchTugas()
                 ]);
                 
             } catch (error) {
-                console.error("Error creating sample data:", error);
-                showNotification("Gagal membuat data contoh: " + error.message, "error");
+                console.error("Error initializing sample data:", error);
+                showNotification("Gagal menginisialisasi data: " + error.message, "error");
             }
         }
 
@@ -2300,14 +3005,14 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     timestamp: new Date().toISOString(),
                     documents: allDocuments,
                     tugas: allTugas,
-                    mata_kuliah: allMataKuliah
+                    users: allUsers
                 };
                 
                 // Convert to JSON and create download
                 const dataStr = JSON.stringify(backup, null, 2);
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                 
-                const exportFileDefaultName = `backup_arsip_${new Date().toISOString().slice(0,10)}.json`;
+                const exportFileDefaultName = `backup_sistem_dosen_${new Date().toISOString().slice(0,10)}.json`;
                 
                 const linkElement = document.createElement('a');
                 linkElement.setAttribute('href', dataUri);
@@ -2321,100 +3026,36 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         }
 
-        // =============== STATISTICS FUNCTIONS ===============
-        function showStatistics() {
-            const stats = {
-                totalDocuments: allDocuments.length,
-                totalTugas: allTugas.length,
-                totalMataKuliah: allMataKuliah.length,
-                documentsByCategory: {},
-                tugasByStatus: {}
-            };
-
-            // Count documents by category
-            allDocuments.forEach(doc => {
-                stats.documentsByCategory[doc.kategori] = (stats.documentsByCategory[doc.kategori] || 0) + 1;
-            });
-
-            // Count tugas by status
-            allTugas.forEach(tugas => {
-                const status = tugas.status_penilaian || 'Belum Dimulai';
-                stats.tugasByStatus[status] = (stats.tugasByStatus[status] || 0) + 1;
-            });
-
-            const statsText = `
-Statistik Sistem:
-================
-Total Dokumen: ${stats.totalDocuments}
-Total Tugas: ${stats.totalTugas}
-Total Mata Kuliah: ${stats.totalMataKuliah}
-
-Dokumen per Kategori:
-${Object.entries(stats.documentsByCategory).map(([cat, count]) => `  ${cat}: ${count}`).join('\n')}
-
-Tugas per Status:
-${Object.entries(stats.tugasByStatus).map(([status, count]) => `  ${status}: ${count}`).join('\n')}
-            `;
-
-            alert(statsText);
-        }
-
-        // =============== DEBUG FUNCTIONS ===============
-        function debugInfo() {
-            console.log("=== DEBUG INFO ===");
-            console.log("Current View:", currentView);
-            console.log("Current Kategori:", currentKategori);
-            console.log("Total Documents:", allDocuments.length);
-            console.log("Total Tugas:", allTugas.length);
-            console.log("Total Mata Kuliah:", allMataKuliah.length);
-            console.log("Current User:", currentUser);
-            console.log("Supabase Client:", supabaseClient ? "Initialized" : "Not initialized");
-            console.log("===================");
-            
-            showNotification("Debug info ditampilkan di console", "info");
-        }
-
-        // Expose some functions to global scope for debugging
-        window.debugInfo = debugInfo;
-        window.createSampleData = createSampleData;
-        window.backupData = backupData;
-        window.showStatistics = showStatistics;
-        window.exportToExcel = exportToExcel;
-        window.exportToPDF = exportToPDF;
+        // Expose functions to global scope
         window.toggleView = toggleView;
         window.filterArsip = filterArsip;
         window.filterTugas = filterTugas;
         window.filterByMatakuliah = filterByMatakuliah;
         window.openUploadModal = openUploadModal;
         window.openTugasModal = openTugasModal;
+        window.openUserModal = openUserModal;
         window.editDoc = editDoc;
         window.editTugas = editTugas;
         window.viewTugasDetail = viewTugasDetail;
         window.deleteDoc = deleteDoc;
         window.deleteTugasDetail = deleteTugasDetail;
         window.downloadFile = downloadFile;
-        window.downloadAllSubmissions = downloadAllSubmissions;
-        window.addSubmission = addSubmission;
-        window.editTugasDetail = editTugasDetail;
         window.changeMonth = changeMonth;
         window.toggleModal = toggleModal;
         window.showNotification = showNotification;
         window.hideNotification = hideNotification;
+        window.initializeSampleData = initializeSampleData;
+        window.backupData = backupData;
 
         // Initialize with sample data if empty
         setTimeout(async () => {
             try {
-                const { data: docs } = await supabaseClient
-                    .from('arsip_dokumen')
+                const { data: users } = await supabaseClient
+                    .from('users')
                     .select('id')
                     .limit(1);
                 
-                const { data: tugas } = await supabaseClient
-                    .from('tugas_perkuliahan')
-                    .select('id')
-                    .limit(1);
-                
-                if ((!docs || docs.length === 0) && (!tugas || tugas.length === 0)) {
+                if (!users || users.length === 0) {
                     console.log("Database kosong, siap untuk data contoh");
                 }
             } catch (error) {
