@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arsip Pak Dhe Robin</title>
+    <title>Arsip Akademik - Pak Dhe Robin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Library untuk kompresi gambar otomatis -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -17,72 +16,225 @@
         .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        .progress-bar { height: 6px; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; transition: width 0.3s ease; }
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .modal-overlay { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+        .calendar-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; }
+        .calendar-day.active { background: #3b82f6; color: white; }
+        .calendar-day.has-event { border: 2px solid #3b82f6; }
     </style>
 </head>
 <body class="min-h-screen">
 
     <!-- Navbar -->
     <nav class="glass sticky top-0 z-50 border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2">
-                    <div class="bg-blue-600 p-2 rounded-lg text-white">
-                        <i class="fas fa-archive text-xl"></i>
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg text-white">
+                        <i class="fas fa-university text-xl"></i>
                     </div>
-                    <span class="text-xl font-bold text-gray-800 tracking-tight">Arsip Pak Dhe Robin</span>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800 tracking-tight">Sistem Arsip Akademik</h1>
+                        <p class="text-xs text-gray-500">Pak Dhe Robin & Tim</p>
+                    </div>
                 </div>
-                <button onclick="openUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95">
-                    <i class="fas fa-plus"></i>
-                    <span class="hidden sm:inline">Tambah Dokumen</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <div class="hidden md:flex items-center gap-4">
+                        <button onclick="toggleView('arsip')" id="btn-view-arsip" class="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 font-medium">
+                            <i class="fas fa-archive mr-2"></i>Arsip Dokumen
+                        </button>
+                        <button onclick="toggleView('tugas')" id="btn-view-tugas" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                            <i class="fas fa-tasks mr-2"></i>Manajemen Tugas
+                        </button>
+                        <button onclick="toggleView('kalender')" id="btn-view-kalender" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                            <i class="fas fa-calendar-alt mr-2"></i>Kalender
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 border-l pl-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                            R
+                        </div>
+                        <span class="hidden sm:inline text-sm font-medium text-gray-700">Pak Dhe Robin</span>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Statistik -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penelitian</p>
-                <h3 id="count-penelitian" class="text-2xl font-bold text-blue-600">0</h3>
+    <!-- Container Utama -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- VIEW: ARSIP DOKUMEN -->
+        <div id="view-arsip" class="space-y-8">
+            <!-- Statistik -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl text-white shadow-lg">
+                    <p class="text-xs uppercase font-bold mb-1 opacity-90">Total Arsip</p>
+                    <h3 id="count-total" class="text-2xl font-bold">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penelitian</p>
+                    <h3 id="count-penelitian" class="text-2xl font-bold text-blue-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengajaran</p>
+                    <h3 id="count-pengajaran" class="text-2xl font-bold text-green-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengabdian</p>
+                    <h3 id="count-pengabdian" class="text-2xl font-bold text-orange-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penunjang</p>
+                    <h3 id="count-penunjang" class="text-2xl font-bold text-purple-600">0</h3>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengajaran</p>
-                <h3 id="count-pengajaran" class="text-2xl font-bold text-green-600">0</h3>
+
+            <!-- Filter dan Pencarian -->
+            <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div class="flex overflow-x-auto gap-6 border-b border-gray-200 w-full sm:w-auto">
+                    <button onclick="filterArsip('Semua')" id="tab-arsip-Semua" class="tab-arsip-btn pb-3 px-2 tab-active whitespace-nowrap">Semua Arsip</button>
+                    <button onclick="filterArsip('Penelitian')" id="tab-arsip-Penelitian" class="tab-arsip-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penelitian</button>
+                    <button onclick="filterArsip('Pengajaran')" id="tab-arsip-Pengajaran" class="tab-arsip-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengajaran</button>
+                    <button onclick="filterArsip('Pengabdian')" id="tab-arsip-Pengabdian" class="tab-arsip-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengabdian</button>
+                    <button onclick="filterArsip('Penunjang')" id="tab-arsip-Penunjang" class="tab-arsip-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penunjang</button>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <input type="text" id="search-arsip" placeholder="Cari judul atau deskripsi..." class="flex-grow sm:w-64 border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="openUploadModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden sm:inline">Tambah</span>
+                    </button>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Pengabdian</p>
-                <h3 id="count-pengabdian" class="text-2xl font-bold text-orange-600">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Penunjang</p>
-                <h3 id="count-penunjang" class="text-2xl font-bold text-purple-600">0</h3>
+
+            <!-- List Arsip Dokumen -->
+            <div id="list-dokumen" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="col-span-full py-20 text-center text-gray-400">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    Memuat data arsip...
+                </div>
             </div>
         </div>
 
-        <!-- Tabs Filter -->
-        <div class="flex overflow-x-auto gap-6 mb-6 border-b border-gray-200">
-            <button onclick="filterKategori('Semua')" id="tab-Semua" class="tab-btn pb-3 px-2 tab-active whitespace-nowrap">Semua</button>
-            <button onclick="filterKategori('Penelitian')" id="tab-Penelitian" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penelitian</button>
-            <button onclick="filterKategori('Pengajaran')" id="tab-Pengajaran" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengajaran</button>
-            <button onclick="filterKategori('Pengabdian')" id="tab-Pengabdian" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Pengabdian</button>
-            <button onclick="filterKategori('Penunjang')" id="tab-Penunjang" class="tab-btn pb-3 px-2 text-gray-500 whitespace-nowrap">Penunjang</button>
+        <!-- VIEW: MANAJEMEN TUGAS -->
+        <div id="view-tugas" class="space-y-8 hidden">
+            <!-- Header Tugas -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Manajemen Tugas Perkuliahan</h2>
+                    <p class="text-gray-600">Kelola tugas, deadline, dan submission mahasiswa</p>
+                </div>
+                <button onclick="openTugasModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md">
+                    <i class="fas fa-plus"></i>
+                    <span>Tugas Baru</span>
+                </button>
+            </div>
+
+            <!-- Filter Tugas -->
+            <div class="flex flex-wrap gap-3">
+                <button onclick="filterTugas('semua')" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">Semua</button>
+                <button onclick="filterTugas('aktif')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Aktif</button>
+                <button onclick="filterTugas('selesai')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Selesai</button>
+                <button onclick="filterTugas('terlambat')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Terlambat</button>
+                <div class="ml-auto">
+                    <select id="filter-matakuliah" onchange="filterByMatakuliah()" class="border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="">Semua Mata Kuliah</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Statistik Tugas -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Total Tugas</p>
+                    <h3 id="count-tugas-total" class="text-2xl font-bold text-gray-800">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Deadline Minggu Ini</p>
+                    <h3 id="count-deadline" class="text-2xl font-bold text-orange-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Tugas Dikumpulkan</p>
+                    <h3 id="count-dikumpulkan" class="text-2xl font-bold text-green-600">0</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">Belum Dinilai</p>
+                    <h3 id="count-belum-dinilai" class="text-2xl font-bold text-red-600">0</h3>
+                </div>
+            </div>
+
+            <!-- List Tugas -->
+            <div id="list-tugas" class="space-y-4">
+                <div class="text-center py-12 text-gray-400">
+                    <i class="fas fa-tasks text-4xl mb-4 opacity-20"></i>
+                    <p>Memuat data tugas...</p>
+                </div>
+            </div>
         </div>
 
-        <!-- List Dokumen -->
-        <div id="list-dokumen" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="col-span-full py-20 text-center text-gray-400">
-                <div class="loading-spinner mx-auto mb-4"></div>
-                Memuat data arsip...
+        <!-- VIEW: KALENDER -->
+        <div id="view-kalender" class="space-y-8 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">Kalender Akademik</h2>
+                <div class="flex items-center gap-4">
+                    <button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h3 id="current-month" class="text-lg font-semibold">Februari 2025</h3>
+                    <button onclick="changeMonth(1)" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Kalender -->
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
+                    <div class="grid grid-cols-7 gap-2 mb-4">
+                        <div class="text-center font-medium text-gray-500 py-2">Min</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Sen</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Sel</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Rab</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Kam</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Jum</div>
+                        <div class="text-center font-medium text-gray-500 py-2">Sab</div>
+                    </div>
+                    <div id="calendar-days" class="grid grid-cols-7 gap-2">
+                        <!-- Hari akan diisi oleh JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Daftar Acara -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">Acara Hari Ini</h3>
+                        <div id="today-events" class="space-y-3">
+                            <div class="text-center py-4 text-gray-400">
+                                <p>Tidak ada acara hari ini</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">Deadline Mendatang</h3>
+                        <div id="upcoming-deadlines" class="space-y-3">
+                            <div class="text-center py-4 text-gray-400">
+                                <p>Tidak ada deadline</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- Modal Upload/Edit -->
-    <div id="modal-upload" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+    <!-- MODAL: Upload/Edit Arsip -->
+    <div id="modal-upload" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h2 id="modal-title" class="text-xl font-bold text-gray-800">Upload Dokumen</h2>
+                <h2 id="modal-title" class="text-xl font-bold text-gray-800">Upload Dokumen Baru</h2>
                 <button onclick="toggleModal('modal-upload')" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times text-xl"></i>
                 </button>
@@ -91,74 +243,1140 @@
                 <input type="hidden" id="edit-id">
                 <input type="hidden" id="old-url">
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Judul Dokumen</label>
-                    <input type="text" id="judul" required placeholder="SK/Sertifikat/Laporan..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Dokumen *</label>
+                        <input type="text" id="judul" required placeholder="SK Penelitian / Laporan / Sertifikat" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
+                        <select id="kategori" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Penelitian">Penelitian</option>
+                            <option value="Pengajaran">Pengajaran</option>
+                            <option value="Pengabdian">Pengabdian</option>
+                            <option value="Penunjang">Penunjang</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                    <select id="kategori" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="Penelitian">Penelitian</option>
-                        <option value="Pengajaran">Pengajaran</option>
-                        <option value="Pengabdian">Pengabdian</option>
-                        <option value="Penunjang">Penunjang</option>
-                    </select>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
+                        <input type="number" id="tahun" min="2000" max="2030" value="2025" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="status" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Draft">Draft</option>
+                            <option value="Publik">Publik</option>
+                            <option value="Internal">Internal</option>
+                            <option value="Arsip">Arsip</option>
+                        </select>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" id="label-file">Pilih File Baru</label>
-                    <input type="file" id="fileInput" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
-                    <p id="compress-info" class="text-[10px] text-blue-500 mt-1 hidden font-medium">✨ Gambar akan dikompresi otomatis</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload File *</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-600 mb-2">Drag & drop file atau klik untuk upload</p>
+                        <p class="text-xs text-gray-500 mb-4">PDF, DOC, DOCX, JPG, PNG (Maks. 10MB)</p>
+                        <input type="file" id="fileInput" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
+                    </div>
+                    <p id="compress-info" class="text-xs text-blue-500 mt-2 hidden">
+                        <i class="fas fa-compress-alt mr-1"></i> Gambar akan dikompresi otomatis
+                    </p>
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
-                    <textarea id="deskripsi" rows="3" placeholder="Catatan tambahan..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="deskripsi" rows="3" placeholder="Deskripsi detail dokumen..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
-                <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition-all">
-                    <span id="btn-text">Simpan ke Arsip</span>
-                    <div id="btn-loader" class="hidden loading-spinner !border-t-white"></div>
-                </button>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tags (pisahkan dengan koma)</label>
+                    <input type="text" id="tags" placeholder="research, publication, conference" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="toggleModal('modal-upload')" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-submit" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2">
+                        <span id="btn-text">Simpan ke Arsip</span>
+                        <div id="btn-loader" class="hidden loading-spinner !border-t-white"></div>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
+    <!-- MODAL: Tambah/Edit Tugas -->
+    <div id="modal-tugas" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-tugas-title" class="text-xl font-bold text-gray-800">Tugas Perkuliahan Baru</h2>
+                <button onclick="toggleModal('modal-tugas')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="form-tugas" class="space-y-4">
+                <input type="hidden" id="tugas-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Kuliah *</label>
+                        <input type="text" id="matakuliah" required placeholder="Algoritma dan Struktur Data" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                        <input type="text" id="kelas" placeholder="TI-3A / SI-2B" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Judul Tugas *</label>
+                    <input type="text" id="judul-tugas" required placeholder="Tugas 1: Implementasi Stack" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai *</label>
+                        <input type="date" id="tanggal-mulai" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Deadline *</label>
+                        <input type="datetime-local" id="deadline" required class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bobot Nilai (%)</label>
+                        <input type="number" id="bobot" min="0" max="100" value="10" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Tugas</label>
+                        <select id="jenis-tugas" class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Individu">Individu</option>
+                            <option value="Kelompok">Kelompok</option>
+                            <option value="Presentasi">Presentasi</option>
+                            <option value="Laporan">Laporan</option>
+                            <option value="Koding">Koding</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Tugas *</label>
+                    <textarea id="deskripsi-tugas" rows="4" required placeholder="Detail tugas, ketentuan, dan instruksi..." class="w-full border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">File Instruksi (Optional)</label>
+                    <input type="file" id="file-tugas" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="toggleModal('modal-tugas')" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-submit-tugas" class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2">
+                        <span id="btn-tugas-text">Simpan Tugas</span>
+                        <div id="btn-tugas-loader" class="hidden loading-spinner !border-t-white"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Detail Tugas -->
+    <div id="modal-detail-tugas" class="hidden fixed inset-0 z-[100] modal-overlay flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 id="detail-judul" class="text-xl font-bold text-gray-800"></h2>
+                    <p id="detail-matakuliah" class="text-gray-600"></p>
+                </div>
+                <button onclick="toggleModal('modal-detail-tugas')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Info Tugas -->
+                <div class="md:col-span-2 space-y-4">
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <h3 class="font-bold text-gray-700 mb-2">Deskripsi Tugas</h3>
+                        <p id="detail-deskripsi" class="text-gray-600"></p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <p class="text-sm text-gray-500">Tanggal Mulai</p>
+                            <p id="detail-mulai" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <p class="text-sm text-gray-500">Deadline</p>
+                            <p id="detail-deadline" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <p class="text-sm text-gray-500">Jenis Tugas</p>
+                            <p id="detail-jenis" class="font-semibold"></p>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-xl p-4">
+                            <p class="text-sm text-gray-500">Bobot Nilai</p>
+                            <p id="detail-bobot" class="font-semibold"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistik Submission -->
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+                        <p class="text-sm opacity-90">Total Mahasiswa</p>
+                        <h3 id="detail-total-mhs" class="text-2xl font-bold">0</h3>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <p class="text-sm text-gray-500">Telah Mengumpulkan</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <h3 id="detail-dikumpulkan" class="text-2xl font-bold text-green-600">0</h3>
+                            <span id="detail-persentase" class="text-sm text-gray-500">0%</span>
+                        </div>
+                        <div class="progress-bar bg-gray-200 mt-2">
+                            <div id="detail-progress" class="progress-fill bg-green-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <p class="text-sm text-gray-500">Status Penilaian</p>
+                        <h3 id="detail-status-nilai" class="text-2xl font-bold text-orange-600">Belum Dinilai</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Daftar Submission -->
+            <div class="mt-8">
+                <h3 class="font-bold text-gray-700 mb-4">Daftar Pengumpulan</h3>
+                <div id="list-submission" class="space-y-2">
+                    <!-- Submission akan diisi oleh JavaScript -->
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-6 border-t">
+                <button onclick="editTugasDetail()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-edit mr-2"></i>Edit Tugas
+                </button>
+                <button onclick="downloadAllSubmissions()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i>Download Semua
+                </button>
+                <button onclick="deleteTugasDetail()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <i class="fas fa-trash mr-2"></i>Hapus Tugas
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notifikasi -->
-    <div id="notification" class="fixed bottom-4 right-4 z-[100] transform translate-y-20 transition-all duration-300 pointer-events-none">
-        <div id="notif-box" class="bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3">
+    <div id="notification" class="fixed bottom-4 right-4 z-[1000] transform translate-y-20 transition-all duration-300 pointer-events-none">
+        <div id="notif-box" class="bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 min-w-[300px]">
             <i id="notif-icon" class="fas fa-check-circle"></i>
-            <span id="notif-msg"></span>
+            <span id="notif-msg" class="flex-grow"></span>
+            <button onclick="hideNotification()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     </div>
 
     <script>
+        // Konfigurasi Supabase
         const SUPABASE_URL = "https://zvtjltvrluczqpdzclag.supabase.co";
         const SUPABASE_KEY = "sb_publishable_Tufkqe0yy4biPypEvXK2KA_It4Yvwr5";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let allDocuments = [];
+        // State aplikasi
+        let currentView = 'arsip';
         let currentKategori = 'Semua';
+        let allDocuments = [];
+        let allTugas = [];
+        let currentMonth = new Date();
+        let currentUser = {
+            id: '1',
+            name: 'Pak Dhe Robin',
+            role: 'Dosen',
+            email: 'robin@university.ac.id'
+        };
 
-        window.onload = fetchDocuments;
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const info = document.getElementById('compress-info');
-            if (file && file.type.startsWith('image/')) {
-                info.classList.remove('hidden');
-            } else {
-                info.classList.add('hidden');
-            }
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchDocuments();
+            fetchTugas();
+            generateCalendar();
+            setTodayEvents();
+            setupEventListeners();
         });
 
-        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('search-arsip').addEventListener('input', debounce(function(e) {
+                searchDocuments(e.target.value);
+            }, 300));
 
+            // File input change
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const info = document.getElementById('compress-info');
+                if (file && file.type.startsWith('image/')) {
+                    info.classList.remove('hidden');
+                } else {
+                    info.classList.add('hidden');
+                }
+            });
+        }
+
+        // =============== VIEW MANAGEMENT ===============
+        function toggleView(view) {
+            currentView = view;
+            
+            // Hide all views
+            document.getElementById('view-arsip').classList.add('hidden');
+            document.getElementById('view-tugas').classList.add('hidden');
+            document.getElementById('view-kalender').classList.add('hidden');
+            
+            // Show selected view
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            
+            // Update button states
+            document.getElementById('btn-view-arsip').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('btn-view-arsip').classList.add('text-gray-600', 'hover:bg-gray-100');
+            document.getElementById('btn-view-tugas').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('btn-view-tugas').classList.add('text-gray-600', 'hover:bg-gray-100');
+            document.getElementById('btn-view-kalender').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('btn-view-kalender').classList.add('text-gray-600', 'hover:bg-gray-100');
+            
+            document.getElementById(`btn-view-${view}`).classList.add('bg-blue-100', 'text-blue-700');
+            document.getElementById(`btn-view-${view}`).classList.remove('text-gray-600', 'hover:bg-gray-100');
+            
+            // Refresh data if needed
+            if (view === 'tugas') {
+                fetchTugas();
+            } else if (view === 'kalender') {
+                generateCalendar();
+            }
+        }
+
+        // =============== DOKUMEN MANAGEMENT ===============
+        async function fetchDocuments() {
+            try {
+                const { data, error } = await supabase
+                    .from('arsip_dokumen')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                allDocuments = data;
+                renderDocuments();
+                updateStats();
+            } catch (err) {
+                showNotification("Gagal memuat dokumen: " + err.message, 'error');
+            }
+        }
+
+        function updateStats() {
+            const counts = { 
+                'Penelitian': 0, 
+                'Pengajaran': 0, 
+                'Pengabdian': 0, 
+                'Penunjang': 0 
+            };
+            
+            allDocuments.forEach(doc => {
+                if (counts.hasOwnProperty(doc.kategori)) {
+                    counts[doc.kategori]++;
+                }
+            });
+            
+            for (let kat in counts) {
+                const el = document.getElementById(`count-${kat.toLowerCase()}`);
+                if(el) el.innerText = counts[kat];
+            }
+            
+            // Update total count
+            document.getElementById('count-total').innerText = allDocuments.length;
+        }
+
+        function filterArsip(kat) {
+            currentKategori = kat;
+            document.querySelectorAll('.tab-arsip-btn').forEach(btn => {
+                btn.classList.toggle('tab-active', btn.id === `tab-arsip-${kat}`);
+                btn.classList.toggle('text-gray-500', btn.id !== `tab-arsip-${kat}`);
+            });
+            renderDocuments();
+        }
+
+        function searchDocuments(query) {
+            const filtered = allDocuments.filter(doc => 
+                doc.judul.toLowerCase().includes(query.toLowerCase()) ||
+                doc.deskripsi.toLowerCase().includes(query.toLowerCase()) ||
+                doc.tags.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            const container = document.getElementById('list-dokumen');
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center text-gray-400">
+                        <i class="fas fa-search text-4xl mb-4 opacity-20"></i>
+                        <p>Tidak ditemukan dokumen dengan kata kunci "${query}"</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            renderDocumentList(filtered);
+        }
+
+        function renderDocuments() {
+            const filtered = currentKategori === 'Semua' 
+                ? allDocuments 
+                : allDocuments.filter(d => d.kategori === currentKategori);
+            
+            renderDocumentList(filtered);
+        }
+
+        function renderDocumentList(documents) {
+            const container = document.getElementById('list-dokumen');
+            
+            if (documents.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center text-gray-400">
+                        <i class="fas fa-folder-open text-5xl mb-4 opacity-20"></i>
+                        <p>Tidak ada dokumen ditemukan.</p>
+                        <button onclick="openUploadModal()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Tambah Dokumen Pertama
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = documents.map(doc => `
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all card-hover flex flex-col overflow-hidden h-full">
+                    <div class="p-5 flex-grow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-xl">
+                                <i class="fas ${getFileIcon(doc.nama_file)} text-xl text-blue-600"></i>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="status-badge ${getStatusColor(doc.status)}">${doc.status || 'Draft'}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${getKategoriColor(doc.kategori)}">
+                                    ${doc.kategori}
+                                </span>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-gray-800 mb-2 line-clamp-2">${doc.judul || doc.nama_file}</h4>
+                        <p class="text-xs text-gray-400 mb-3 truncate">
+                            <i class="fas fa-file mr-1"></i>${doc.nama_file}
+                        </p>
+                        <p class="text-sm text-gray-500 line-clamp-3">${doc.deskripsi || 'Tidak ada deskripsi'}</p>
+                        
+                        ${doc.tags ? `
+                            <div class="mt-4 flex flex-wrap gap-1">
+                                ${doc.tags.split(',').map(tag => `
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${tag.trim()}</span>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="p-5 pt-0 mt-auto">
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
+                                    ${doc.diupload_oleh?.charAt(0) || 'R'}
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-gray-500">Diupload oleh</p>
+                                    <p class="text-xs font-medium text-gray-700">${doc.diupload_oleh || 'Pak Dhe Robin'}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-1">
+                                <button onclick="editDoc('${doc.id}')" title="Edit" class="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteDoc('${doc.id}')" title="Hapus" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                <button onclick="downloadFile('${doc.file_url}', '${doc.nama_file}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="text-[10px] text-gray-400 mt-3 flex justify-between">
+                            <span>Tahun: ${doc.tahun || '2025'}</span>
+                            <span>${new Date(doc.created_at).toLocaleDateString('id-ID')}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =============== TUGAS MANAGEMENT ===============
+        async function fetchTugas() {
+            try {
+                const { data, error } = await supabase
+                    .from('tugas_perkuliahan')
+                    .select('*')
+                    .order('deadline', { ascending: true });
+                
+                if (error) throw error;
+                
+                allTugas = data;
+                renderTugas();
+                updateTugasStats();
+                populateMatakuliahFilter();
+            } catch (err) {
+                showNotification("Gagal memuat tugas: " + err.message, 'error');
+            }
+        }
+
+        function updateTugasStats() {
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            const total = allTugas.length;
+            const deadlineThisWeek = allTugas.filter(t => {
+                const deadline = new Date(t.deadline);
+                return deadline > now && deadline <= nextWeek;
+            }).length;
+            
+            const dikumpulkan = allTugas.reduce((sum, t) => sum + (t.jumlah_submission || 0), 0);
+            const belumDinilai = allTugas.filter(t => t.status_penilaian !== 'Selesai').length;
+            
+            document.getElementById('count-tugas-total').innerText = total;
+            document.getElementById('count-deadline').innerText = deadlineThisWeek;
+            document.getElementById('count-dikumpulkan').innerText = dikumpulkan;
+            document.getElementById('count-belum-dinilai').innerText = belumDinilai;
+        }
+
+        function filterTugas(status) {
+            let filtered = allTugas;
+            const now = new Date();
+            
+            switch(status) {
+                case 'aktif':
+                    filtered = allTugas.filter(t => new Date(t.deadline) > now);
+                    break;
+                case 'selesai':
+                    filtered = allTugas.filter(t => new Date(t.deadline) <= now);
+                    break;
+                case 'terlambat':
+                    filtered = allTugas.filter(t => {
+                        const deadline = new Date(t.deadline);
+                        return deadline < now && (t.jumlah_submission || 0) < (t.total_mahasiswa || 0);
+                    });
+                    break;
+            }
+            
+            renderTugasList(filtered);
+        }
+
+        function filterByMatakuliah() {
+            const matakuliah = document.getElementById('filter-matakuliah').value;
+            if (!matakuliah) {
+                renderTugasList(allTugas);
+                return;
+            }
+            
+            const filtered = allTugas.filter(t => t.matakuliah === matakuliah);
+            renderTugasList(filtered);
+        }
+
+        function populateMatakuliahFilter() {
+            const select = document.getElementById('filter-matakuliah');
+            const matakuliahList = [...new Set(allTugas.map(t => t.matakuliah))];
+            
+            select.innerHTML = '<option value="">Semua Mata Kuliah</option>';
+            matakuliahList.forEach(mk => {
+                const option = document.createElement('option');
+                option.value = mk;
+                option.textContent = mk;
+                select.appendChild(option);
+            });
+        }
+
+        function renderTugas() {
+            renderTugasList(allTugas);
+        }
+
+        function renderTugasList(tugasList) {
+            const container = document.getElementById('list-tugas');
+            const now = new Date();
+            
+            if (tugasList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-clipboard-list text-4xl mb-4 opacity-20"></i>
+                        <p>Tidak ada tugas ditemukan.</p>
+                        <button onclick="openTugasModal()" class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Buat Tugas Pertama
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tugasList.map(tugas => {
+                const deadline = new Date(tugas.deadline);
+                const isOverdue = deadline < now;
+                const submissionRate = tugas.total_mahasiswa ? 
+                    Math.round((tugas.jumlah_submission || 0) / tugas.total_mahasiswa * 100) : 0;
+                
+                return `
+                    <div class="bg-white rounded-xl border ${isOverdue ? 'border-red-200' : 'border-gray-200'} p-5 card-hover">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-gray-800">${tugas.judul}</h3>
+                                <p class="text-sm text-gray-600">${tugas.matakuliah} • ${tugas.kelas || 'Semua Kelas'}</p>
+                            </div>
+                            <span class="status-badge ${getTugasStatusColor(tugas.status_penilaian, isOverdue)}">
+                                ${isOverdue ? 'TERLAMBAT' : (tugas.status_penilaian || 'AKTIF')}
+                            </span>
+                        </div>
+                        
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">${tugas.deskripsi}</p>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="text-center bg-gray-50 p-3 rounded-lg">
+                                <p class="text-xs text-gray-500">Mulai</p>
+                                <p class="font-semibold">${formatDate(tugas.tanggal_mulai)}</p>
+                            </div>
+                            <div class="text-center ${isOverdue ? 'bg-red-50' : 'bg-gray-50'} p-3 rounded-lg">
+                                <p class="text-xs ${isOverdue ? 'text-red-500' : 'text-gray-500'}">Deadline</p>
+                                <p class="font-semibold ${isOverdue ? 'text-red-600' : ''}">${formatDateTime(deadline)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Pengumpulan: ${tugas.jumlah_submission || 0}/${tugas.total_mahasiswa || 0}</span>
+                                <span>${submissionRate}%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200">
+                                <div class="progress-fill ${submissionRate >= 80 ? 'bg-green-500' : submissionRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                                     style="width: ${submissionRate}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-sm font-bold">
+                                    ${tugas.dibuat_oleh?.charAt(0) || 'R'}
+                                </div>
+                                <span class="text-sm text-gray-600">${tugas.dibuat_oleh || 'Pak Dhe Robin'}</span>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="viewTugasDetail('${tugas.id}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-eye mr-1"></i>Detail
+                                </button>
+                                <button onclick="editTugas('${tugas.id}')" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =============== KALENDER FUNCTIONS ===============
+        function generateCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            // Update month header
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
+            
+            // Get first day of month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            
+            // Clear previous days
+            const container = document.getElementById('calendar-days');
+            container.innerHTML = '';
+            
+            // Add empty cells for days before first day
+            const firstDayIndex = firstDay.getDay();
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'calendar-day';
+                container.appendChild(emptyDiv);
+            }
+            
+            // Add days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                dayDiv.textContent = day;
+                dayDiv.onclick = () => showDayEvents(year, month, day);
+                
+                const currentDate = new Date(year, month, day);
+                if (currentDate.toDateString() === today.toDateString()) {
+                    dayDiv.classList.add('active');
+                }
+                
+                // Check if there are events on this day
+                if (hasEventsOnDate(currentDate)) {
+                    dayDiv.classList.add('has-event');
+                }
+                
+                container.appendChild(dayDiv);
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            generateCalendar();
+            setTodayEvents();
+        }
+
+        function hasEventsOnDate(date) {
+            // Check if there are deadlines or tugas starting on this date
+            return allTugas.some(tugas => {
+                const startDate = new Date(tugas.tanggal_mulai);
+                const deadline = new Date(tugas.deadline);
+                return startDate.toDateString() === date.toDateString() ||
+                       deadline.toDateString() === date.toDateString();
+            });
+        }
+
+        function setTodayEvents() {
+            const today = new Date();
+            const todayEvents = allTugas.filter(t => {
+                const start = new Date(t.tanggal_mulai);
+                const deadline = new Date(t.deadline);
+                return start.toDateString() === today.toDateString() ||
+                       deadline.toDateString() === today.toDateString();
+            });
+            
+            const container = document.getElementById('today-events');
+            if (todayEvents.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-400"><p>Tidak ada acara hari ini</p></div>';
+                return;
+            }
+            
+            container.innerHTML = todayEvents.map(event => `
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-medium text-gray-800">${event.judul}</h4>
+                            <p class="text-xs text-gray-500">${event.matakuliah}</p>
+                        </div>
+                        <span class="text-xs font-medium ${new Date(event.deadline).toDateString() === today.toDateString() ? 'text-red-600' : 'text-blue-600'}">
+                            ${new Date(event.deadline).toDateString() === today.toDateString() ? 'DEADLINE' : 'MULAI'}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">${formatDateTime(new Date(event.deadline))}</p>
+                </div>
+            `).join('');
+            
+            // Update upcoming deadlines
+            updateUpcomingDeadlines();
+        }
+
+        function updateUpcomingDeadlines() {
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            const upcoming = allTugas
+                .filter(t => {
+                    const deadline = new Date(t.deadline);
+                    return deadline > now && deadline <= nextWeek;
+                })
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .slice(0, 5);
+            
+            const container = document.getElementById('upcoming-deadlines');
+            if (upcoming.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-400"><p>Tidak ada deadline</p></div>';
+                return;
+            }
+            
+            container.innerHTML = upcoming.map(tugas => `
+                <div class="border-l-4 border-orange-500 pl-3 py-2">
+                    <h4 class="font-medium text-gray-800 text-sm">${tugas.judul}</h4>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-xs text-gray-500">${tugas.matakuliah}</span>
+                        <span class="text-xs font-medium text-orange-600">
+                            ${formatDate(new Date(tugas.deadline))}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =============== MODAL FUNCTIONS ===============
         function openUploadModal() {
             document.getElementById('form-upload').reset();
             document.getElementById('edit-id').value = "";
+            document.getElementById('tahun').value = new Date().getFullYear();
             document.getElementById('modal-title').innerText = "Upload Dokumen Baru";
             document.getElementById('btn-text').innerText = "Simpan ke Arsip";
             document.getElementById('fileInput').required = true;
-            document.getElementById('label-file').innerText = "Pilih File";
             toggleModal('modal-upload');
+        }
+
+        function openTugasModal() {
+            document.getElementById('form-tugas').reset();
+            document.getElementById('tugas-id').value = "";
+            
+            // Set default dates
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            
+            document.getElementById('tanggal-mulai').value = formatDateForInput(now);
+            document.getElementById('deadline').value = formatDateTimeForInput(tomorrow);
+            
+            document.getElementById('modal-tugas-title').innerText = "Tugas Perkuliahan Baru";
+            document.getElementById('btn-tugas-text').innerText = "Simpan Tugas";
+            toggleModal('modal-tugas');
+        }
+
+        // =============== CRUD OPERATIONS ===============
+        // Handle form submission for documents
+        document.getElementById('form-upload').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const editId = document.getElementById('edit-id').value;
+            let file = document.getElementById('fileInput').files[0];
+            const judul = document.getElementById('judul').value;
+            const kategori = document.getElementById('kategori').value;
+            const deskripsi = document.getElementById('deskripsi').value;
+            const tahun = document.getElementById('tahun').value;
+            const status = document.getElementById('status').value;
+            const tags = document.getElementById('tags').value;
+            
+            const btn = document.getElementById('btn-submit');
+            const btnLoader = document.getElementById('btn-loader');
+            const btnText = document.getElementById('btn-text');
+            
+            btn.disabled = true;
+            btnLoader.classList.remove('hidden');
+            btnText.innerText = "Menyimpan...";
+
+            try {
+                let finalUrl = document.getElementById('old-url').value;
+                let finalFileName = allDocuments.find(d => d.id === editId)?.nama_file || "";
+
+                if (file) {
+                    if (file.type.startsWith('image/')) {
+                        btnText.innerText = "Mengompres gambar...";
+                        const options = { 
+                            maxSizeMB: 0.8, 
+                            maxWidthOrHeight: 1920, 
+                            useWebWorker: true 
+                        };
+                        try { 
+                            file = await imageCompression(file, options); 
+                        } catch (e) {
+                            console.warn("Gagal kompresi:", e);
+                        }
+                    }
+
+                    btnText.innerText = "Mengupload file...";
+                    const path = `${kategori}/${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+                    const { error: storageErr } = await supabase
+                        .storage
+                        .from('dokumen-arsip')
+                        .upload(path, file);
+                    
+                    if (storageErr) throw storageErr;
+
+                    const { data: { publicUrl } } = supabase
+                        .storage
+                        .from('dokumen-arsip')
+                        .getPublicUrl(path);
+                    
+                    finalUrl = publicUrl;
+                    finalFileName = file.name;
+                }
+
+                btnText.innerText = "Menyimpan data...";
+                const docData = { 
+                    judul, 
+                    nama_file: finalFileName, 
+                    kategori, 
+                    deskripsi, 
+                    file_url: finalUrl,
+                    tahun,
+                    status,
+                    tags,
+                    diupload_oleh: currentUser.name,
+                    diupload_id: currentUser.id
+                };
+
+                if (editId) {
+                    const { error } = await supabase
+                        .from('arsip_dokumen')
+                        .update(docData)
+                        .eq('id', editId);
+                    
+                    if (error) throw error;
+                    showNotification("Dokumen berhasil diperbarui!");
+                } else {
+                    const { error } = await supabase
+                        .from('arsip_dokumen')
+                        .insert([docData]);
+                    
+                    if (error) throw error;
+                    showNotification("Dokumen berhasil disimpan!");
+                }
+
+                toggleModal('modal-upload');
+                fetchDocuments();
+            } catch (err) {
+                showNotification("Gagal menyimpan: " + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btnLoader.classList.add('hidden');
+                btnText.innerText = editId ? "Simpan Perubahan" : "Simpan ke Arsip";
+            }
+        };
+
+        // Handle form submission for tugas
+        document.getElementById('form-tugas').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const tugasId = document.getElementById('tugas-id').value;
+            const matakuliah = document.getElementById('matakuliah').value;
+            const kelas = document.getElementById('kelas').value;
+            const judul = document.getElementById('judul-tugas').value;
+            const tanggal_mulai = document.getElementById('tanggal-mulai').value;
+            const deadline = document.getElementById('deadline').value;
+            const bobot = parseInt(document.getElementById('bobot').value);
+            const jenis_tugas = document.getElementById('jenis-tugas').value;
+            const deskripsi = document.getElementById('deskripsi-tugas').value;
+            const file = document.getElementById('file-tugas').files[0];
+            
+            const btn = document.getElementById('btn-submit-tugas');
+            const btnLoader = document.getElementById('btn-tugas-loader');
+            const btnText = document.getElementById('btn-tugas-text');
+            
+            btn.disabled = true;
+            btnLoader.classList.remove('hidden');
+            btnText.innerText = "Menyimpan...";
+
+            try {
+                let fileUrl = null;
+                
+                if (file) {
+                    btnText.innerText = "Mengupload file instruksi...";
+                    const path = `tugas/${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+                    const { error: storageErr } = await supabase
+                        .storage
+                        .from('dokumen-arsip')
+                        .upload(path, file);
+                    
+                    if (storageErr) throw storageErr;
+
+                    const { data: { publicUrl } } = supabase
+                        .storage
+                        .from('dokumen-arsip')
+                        .getPublicUrl(path);
+                    
+                    fileUrl = publicUrl;
+                }
+
+                btnText.innerText = "Menyimpan data tugas...";
+                const tugasData = { 
+                    matakuliah,
+                    kelas,
+                    judul,
+                    tanggal_mulai,
+                    deadline,
+                    bobot,
+                    jenis_tugas,
+                    deskripsi,
+                    file_instruksi: fileUrl,
+                    dibuat_oleh: currentUser.name,
+                    dibuat_id: currentUser.id,
+                    status_penilaian: 'Belum Dimulai',
+                    jumlah_submission: 0,
+                    total_mahasiswa: 0
+                };
+
+                if (tugasId) {
+                    const { error } = await supabase
+                        .from('tugas_perkuliahan')
+                        .update(tugasData)
+                        .eq('id', tugasId);
+                    
+                    if (error) throw error;
+                    showNotification("Tugas berhasil diperbarui!");
+                } else {
+                    const { error } = await supabase
+                        .from('tugas_perkuliahan')
+                        .insert([tugasData]);
+                    
+                    if (error) throw error;
+                    showNotification("Tugas berhasil dibuat!");
+                }
+
+                toggleModal('modal-tugas');
+                fetchTugas();
+            } catch (err) {
+                showNotification("Gagal menyimpan tugas: " + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btnLoader.classList.add('hidden');
+                btnText.innerText = tugasId ? "Update Tugas" : "Simpan Tugas";
+            }
+        };
+
+        async function deleteDoc(id) {
+            const doc = allDocuments.find(d => d.id === id);
+            if (!doc) return;
+
+            if (!confirm(`Hapus arsip "${doc.judul}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+            try {
+                showNotification("Menghapus dokumen...");
+
+                // Delete from storage
+                if (doc.file_url) {
+                    const urlParts = doc.file_url.split('/dokumen-arsip/');
+                    if (urlParts.length > 1) {
+                        const filePath = decodeURIComponent(urlParts[1]);
+                        const { error: storageError } = await supabase
+                            .storage
+                            .from('dokumen-arsip')
+                            .remove([filePath]);
+                        
+                        if (storageError) {
+                            console.warn("Gagal hapus file fisik:", storageError.message);
+                        }
+                    }
+                }
+
+                // Delete from database
+                const { error: dbError } = await supabase
+                    .from('arsip_dokumen')
+                    .delete()
+                    .eq('id', id);
+
+                if (dbError) throw dbError;
+
+                showNotification("Dokumen berhasil dihapus.");
+                fetchDocuments();
+            } catch (err) {
+                showNotification("Gagal menghapus: " + err.message, 'error');
+            }
+        }
+
+        async function deleteTugasDetail() {
+            const tugasId = document.getElementById('tugas-id')?.value;
+            if (!tugasId) return;
+
+            if (!confirm("Hapus tugas ini? Semua data submission akan hilang.")) return;
+
+            try {
+                showNotification("Menghapus tugas...");
+                
+                const { error } = await supabase
+                    .from('tugas_perkuliahan')
+                    .delete()
+                    .eq('id', tugasId);
+                
+                if (error) throw error;
+                
+                showNotification("Tugas berhasil dihapus.");
+                toggleModal('modal-detail-tugas');
+                fetchTugas();
+            } catch (err) {
+                showNotification("Gagal menghapus tugas: " + err.message, 'error');
+            }
+        }
+
+        // =============== UTILITY FUNCTIONS ===============
+        function getFileIcon(filename) {
+            const ext = filename?.split('.').pop().toLowerCase() || '';
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'fa-file-image';
+            if (ext === 'pdf') return 'fa-file-pdf';
+            if (['doc', 'docx'].includes(ext)) return 'fa-file-word';
+            if (['xls', 'xlsx'].includes(ext)) return 'fa-file-excel';
+            if (['ppt', 'pptx'].includes(ext)) return 'fa-file-powerpoint';
+            if (['zip', 'rar', '7z'].includes(ext)) return 'fa-file-archive';
+            return 'fa-file-alt';
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Publik': 'bg-green-100 text-green-800',
+                'Internal': 'bg-blue-100 text-blue-800',
+                'Draft': 'bg-yellow-100 text-yellow-800',
+                'Arsip': 'bg-gray-100 text-gray-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getKategoriColor(kategori) {
+            const colors = {
+                'Penelitian': 'bg-blue-100 text-blue-800',
+                'Pengajaran': 'bg-green-100 text-green-800',
+                'Pengabdian': 'bg-orange-100 text-orange-800',
+                'Penunjang': 'bg-purple-100 text-purple-800'
+            };
+            return colors[kategori] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getTugasStatusColor(status, isOverdue) {
+            if (isOverdue) return 'bg-red-100 text-red-800';
+            
+            const colors = {
+                'Belum Dimulai': 'bg-yellow-100 text-yellow-800',
+                'Sedang Berlangsung': 'bg-blue-100 text-blue-800',
+                'Selesai': 'bg-green-100 text-green-800',
+                'Dinilai': 'bg-purple-100 text-purple-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('id-ID', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateTime(date) {
+            return new Date(date).toLocaleDateString('id-ID', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDateForInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function formatDateTimeForInput(date) {
+            return date.toISOString().slice(0, 16);
+        }
+
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+            document.body.style.overflow = modal.classList.contains('hidden') ? 'auto' : 'hidden';
         }
 
         function showNotification(msg, type = 'success') {
@@ -166,99 +1384,42 @@
             const notifMsg = document.getElementById('notif-msg');
             const notifIcon = document.getElementById('notif-icon');
             const notifBox = document.getElementById('notif-box');
+            
             notifMsg.innerText = msg;
-            notifBox.className = type === 'success' ? 'bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3' : 'bg-red-600 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3';
-            notifIcon.className = type === 'success' ? 'fas fa-check-circle text-green-400' : 'fas fa-exclamation-triangle text-white';
+            
+            if (type === 'success') {
+                notifBox.className = 'bg-gray-800 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 min-w-[300px]';
+                notifIcon.className = 'fas fa-check-circle text-green-400';
+            } else {
+                notifBox.className = 'bg-red-600 text-white px-6 py-3 rounded-xl shadow-xl flex items-center gap-3 min-w-[300px]';
+                notifIcon.className = 'fas fa-exclamation-triangle text-white';
+            }
+            
             notif.classList.remove('translate-y-20');
-            setTimeout(() => notif.classList.add('translate-y-20'), 4000);
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                notif.classList.add('translate-y-20');
+            }, 5000);
         }
 
-        async function fetchDocuments() {
-            try {
-                const { data, error } = await supabaseClient.from('arsip_dokumen').select('*').order('created_at', { ascending: false });
-                if (error) throw error;
-                allDocuments = data;
-                renderDocuments();
-                updateStats();
-            } catch (err) {
-                showNotification("Gagal memuat: " + err.message, 'error');
-            }
+        function hideNotification() {
+            document.getElementById('notification').classList.add('translate-y-20');
         }
 
-        function updateStats() {
-            const counts = { 'Penelitian': 0, 'Pengajaran': 0, 'Pengabdian': 0, 'Penunjang': 0 };
-            allDocuments.forEach(doc => counts[doc.kategori]++);
-            for (let kat in counts) {
-                const el = document.getElementById(`count-${kat.toLowerCase()}`);
-                if(el) el.innerText = counts[kat];
-            }
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
-        function filterKategori(kat) {
-            currentKategori = kat;
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.toggle('tab-active', btn.id === `tab-${kat}`);
-                if(btn.id !== `tab-${kat}`) btn.classList.add('text-gray-500');
-            });
-            renderDocuments();
-        }
-
-        function getFileIcon(filename) {
-            const ext = filename?.split('.').pop().toLowerCase() || '';
-            if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'fa-file-image text-pink-500';
-            if (ext === 'pdf') return 'fa-file-pdf text-red-500';
-            if (['doc', 'docx'].includes(ext)) return 'fa-file-word text-blue-500';
-            return 'fa-file-alt text-gray-500';
-        }
-
-        function renderDocuments() {
-            const container = document.getElementById('list-dokumen');
-            const filtered = currentKategori === 'Semua' ? allDocuments : allDocuments.filter(d => d.kategori === currentKategori);
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400"><i class="fas fa-folder-open text-5xl mb-4 opacity-20"></i><p>Tidak ada dokumen ditemukan.</p></div>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map(doc => `
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm transition-all card-hover flex flex-col overflow-hidden">
-                    <div class="p-5 flex-grow">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="bg-gray-50 p-3 rounded-xl"><i class="fas ${getFileIcon(doc.nama_file)} text-xl"></i></div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-gray-100 text-gray-500">${doc.kategori}</span>
-                        </div>
-                        <h4 class="font-bold text-gray-800 mb-1 line-clamp-2">${doc.judul || doc.nama_file}</h4>
-                        <p class="text-[10px] text-gray-400 mb-3 truncate">File: ${doc.nama_file}</p>
-                        <p class="text-sm text-gray-500 italic line-clamp-3">${doc.deskripsi || '-'}</p>
-                    </div>
-                    <div class="p-5 pt-0 mt-auto">
-                        <div class="flex items-center justify-between pt-4 border-t border-gray-50">
-                            <span class="text-[10px] text-gray-400">${new Date(doc.created_at).toLocaleDateString('id-ID')}</span>
-                            <div class="flex gap-1">
-                                <button onclick="editDoc('${doc.id}')" title="Edit" class="p-2 text-gray-300 hover:text-blue-600 transition-colors"><i class="fas fa-edit"></i></button>
-                                <button onclick="deleteDoc('${doc.id}')" title="Hapus" class="p-2 text-gray-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                                <button onclick="downloadFile('${doc.file_url}', '${doc.nama_file}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-                                    <i class="fas fa-download"></i> Unduh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function downloadFile(url, name) {
-            try {
-                showNotification("Mendownload...");
-                const res = await fetch(url);
-                const blob = await res.blob();
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = name;
-                link.click();
-            } catch (e) { window.open(url, '_blank'); }
-        }
-
+        // =============== EDIT FUNCTIONS ===============
         async function editDoc(id) {
             const doc = allDocuments.find(d => d.id === id);
             if (!doc) return;
@@ -267,111 +1428,98 @@
             document.getElementById('judul').value = doc.judul || "";
             document.getElementById('kategori').value = doc.kategori;
             document.getElementById('deskripsi').value = doc.deskripsi || "";
+            document.getElementById('tahun').value = doc.tahun || new Date().getFullYear();
+            document.getElementById('status').value = doc.status || 'Draft';
+            document.getElementById('tags').value = doc.tags || "";
             document.getElementById('old-url').value = doc.file_url;
             
             document.getElementById('modal-title').innerText = "Edit Dokumen";
             document.getElementById('btn-text').innerText = "Simpan Perubahan";
             document.getElementById('fileInput').required = false;
-            document.getElementById('label-file').innerText = "Ganti File (Kosongkan jika tidak diubah)";
             
             toggleModal('modal-upload');
         }
 
-        document.getElementById('form-upload').onsubmit = async (e) => {
-            e.preventDefault();
-            const editId = document.getElementById('edit-id').value;
-            let file = document.getElementById('fileInput').files[0];
-            const judul = document.getElementById('judul').value;
-            const kategori = document.getElementById('kategori').value;
-            const deskripsi = document.getElementById('deskripsi').value;
+        async function editTugas(id) {
+            const tugas = allTugas.find(t => t.id === id);
+            if (!tugas) return;
+
+            document.getElementById('tugas-id').value = tugas.id;
+            document.getElementById('matakuliah').value = tugas.matakuliah || "";
+            document.getElementById('kelas').value = tugas.kelas || "";
+            document.getElementById('judul-tugas').value = tugas.judul || "";
+            document.getElementById('tanggal-mulai').value = formatDateForInput(new Date(tugas.tanggal_mulai));
+            document.getElementById('deadline').value = formatDateTimeForInput(new Date(tugas.deadline));
+            document.getElementById('bobot').value = tugas.bobot || 10;
+            document.getElementById('jenis-tugas').value = tugas.jenis_tugas || 'Individu';
+            document.getElementById('deskripsi-tugas').value = tugas.deskripsi || "";
             
-            const btn = document.getElementById('btn-submit');
-            const btnLoader = document.getElementById('btn-loader');
-            const btnText = document.getElementById('btn-text');
+            document.getElementById('modal-tugas-title').innerText = "Edit Tugas";
+            document.getElementById('btn-tugas-text').innerText = "Update Tugas";
             
-            btn.disabled = true;
-            btnLoader.classList.remove('hidden');
+            toggleModal('modal-tugas');
+        }
 
+        async function viewTugasDetail(id) {
+            const tugas = allTugas.find(t => t.id === id);
+            if (!tugas) return;
+
+            // Fill detail information
+            document.getElementById('detail-judul').textContent = tugas.judul;
+            document.getElementById('detail-matakuliah').textContent = `${tugas.matakuliah} • ${tugas.kelas || 'Semua Kelas'}`;
+            document.getElementById('detail-deskripsi').textContent = tugas.deskripsi;
+            document.getElementById('detail-mulai').textContent = formatDate(new Date(tugas.tanggal_mulai));
+            document.getElementById('detail-deadline').textContent = formatDateTime(new Date(tugas.deadline));
+            document.getElementById('detail-jenis').textContent = tugas.jenis_tugas;
+            document.getElementById('detail-bobot').textContent = `${tugas.bobot}%`;
+            document.getElementById('detail-total-mhs').textContent = tugas.total_mahasiswa || 0;
+            document.getElementById('detail-dikumpulkan').textContent = tugas.jumlah_submission || 0;
+            
+            const submissionRate = tugas.total_mahasiswa ? 
+                Math.round((tugas.jumlah_submission || 0) / tugas.total_mahasiswa * 100) : 0;
+            document.getElementById('detail-persentase').textContent = `${submissionRate}%`;
+            document.getElementById('detail-progress').style.width = `${submissionRate}%`;
+            
+            document.getElementById('detail-status-nilai').textContent = tugas.status_penilaian || 'Belum Dimulai';
+            document.getElementById('detail-status-nilai').className = `text-2xl font-bold ${tugas.status_penilaian === 'Selesai' ? 'text-green-600' : 'text-orange-600'}`;
+
+            // Set tugas id for edit/delete
+            document.getElementById('tugas-id').value = tugas.id;
+
+            toggleModal('modal-detail-tugas');
+        }
+
+        // =============== DOWNLOAD FUNCTIONS ===============
+        async function downloadFile(url, name) {
             try {
-                let finalUrl = document.getElementById('old-url').value;
-                let finalFileName = allDocuments.find(d => d.id === editId)?.nama_file || "";
-
-                if (file) {
-                    if (file.type.startsWith('image/')) {
-                        btnText.innerText = "Mengompres...";
-                        const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true };
-                        try { file = await imageCompression(file, options); } catch (e) {}
-                    }
-
-                    btnText.innerText = "Mengupload...";
-                    const path = `${kategori}/${Date.now()}_${file.name}`;
-                    const { error: storageErr } = await supabaseClient.storage.from('dokumen-arsip').upload(path, file);
-                    if (storageErr) throw storageErr;
-
-                    const { data: { publicUrl } } = supabaseClient.storage.from('dokumen-arsip').getPublicUrl(path);
-                    finalUrl = publicUrl;
-                    finalFileName = file.name;
-                }
-
-                btnText.innerText = "Menyimpan...";
-                if (editId) {
-                    const { error } = await supabaseClient.from('arsip_dokumen').update({ judul, nama_file: finalFileName, kategori, deskripsi, file_url: finalUrl }).eq('id', editId);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabaseClient.from('arsip_dokumen').insert([{ judul, nama_file: finalFileName, kategori, deskripsi, file_url: finalUrl }]);
-                    if (error) throw error;
-                }
-
-                showNotification(editId ? "Berhasil diperbarui!" : "Berhasil disimpan!");
-                toggleModal('modal-upload');
-                fetchDocuments();
-            } catch (err) {
-                showNotification(err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btnLoader.classList.add('hidden');
-                btnText.innerText = editId ? "Simpan Perubahan" : "Simpan ke Arsip";
-            }
-        };
-
-        // FUNGSI HAPUS YANG DIPERBAIKI
-        async function deleteDoc(id) {
-            const doc = allDocuments.find(d => d.id === id);
-            if (!doc) return;
-
-            if (!confirm(`Hapus arsip "${doc.judul || doc.nama_file}"?`)) return;
-
-            try {
-                showNotification("Menghapus arsip...");
-
-                // 1. Ambil path file dari URL untuk menghapus di storage
-                // URL Supabase biasanya: .../storage/v1/object/public/dokumen-arsip/Penelitian/file.pdf
-                const urlParts = doc.file_url.split('/dokumen-arsip/');
-                if (urlParts.length > 1) {
-                    const filePath = decodeURIComponent(urlParts[1]);
-                    // Hapus file di Storage terlebih dahulu
-                    const { error: storageError } = await supabaseClient.storage
-                        .from('dokumen-arsip')
-                        .remove([filePath]);
-                    
-                    if (storageError) console.warn("Gagal hapus file fisik, lanjut hapus data tabel:", storageError.message);
-                }
-
-                // 2. Hapus baris data di Tabel
-                const { error: dbError } = await supabaseClient
-                    .from('arsip_dokumen')
-                    .delete()
-                    .eq('id', id);
-
-                if (dbError) throw dbError;
-
-                showNotification("Arsip berhasil dihapus.");
-                fetchDocuments(); // Refresh tampilan
-            } catch (err) {
-                console.error("Error Delete:", err);
-                showNotification("Gagal menghapus: " + err.message, 'error');
+                showNotification("Mendownload file...");
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = name;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            } catch (e) {
+                // Fallback to opening in new tab
+                window.open(url, '_blank');
             }
         }
+
+        async function downloadAllSubmissions() {
+            showNotification("Fitur download semua submission sedang dikembangkan", 'error');
+        }
+
+        function editTugasDetail() {
+            const tugasId = document.getElementById('tugas-id').value;
+            toggleModal('modal-detail-tugas');
+            setTimeout(() => editTugas(tugasId), 300);
+        }
+
+        // Initialize with current date
+        const now = new Date();
+        document.getElementById('tanggal-mulai').value = formatDateForInput(now);
+        document.getElementById('deadline').value = formatDateTimeForInput(new Date(now.getTime() + 24 * 60 * 60 * 1000));
     </script>
 </body>
 </html>
